@@ -319,8 +319,8 @@ if __name__ == "__main__":
     db_dir = db_dir_path.as_posix()
     out_dir = (curpath / "plumas_tifs").as_posix()
 
-    pipeline_filename = "__pl__.json"
-    ground_VRT_filename = "__grnd__.vrt"
+    pipeline_filename = "../TestOutput/__pl__.json"
+    ground_VRT_filename = "../TestOutput/__grnd__.vrt"
     
     resolution = 30 # 30 meter resolution
 

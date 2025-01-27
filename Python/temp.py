@@ -44,7 +44,7 @@ print(scan_file_for_bounds(signedURLs[0]))
 """
 p = build_pipeline("test.laz", skip_classes = [7,18,9], override_srs = "EPSG:26911", out_srs = "EPSG:26910")
 # write pipeline file
-write_pipeline(p, "__testpl__.json")
+write_pipeline(p, "../TestOutput/__testpl__.json")
 """
 
 """ 
