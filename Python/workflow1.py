@@ -23,6 +23,13 @@ from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 #
 # Returns valid srs if successful, empty string otherwise
 def scan_for_srs(files, all_must_match = True):
+    """Use PDAL quickinfo to get srs for first file in list of files. Optionally,
+    check that all files in list have same srs.
+
+    :raises Exception: srs for files in list are different from srs for first file
+    :return: srs string
+    """
+
     if len(files) == 0:
         return ""
         
@@ -40,7 +47,7 @@ def scan_for_srs(files, all_must_match = True):
             qi = p.quickinfo[reader.type]
             fsrs = json.dumps(qi['srs']['json'])
             if fsrs.lower() != srs.lower():
-                return ""
+                raise Exception(f"srs for file: {files[i]} ({fsrs}) dose not match srs for first file: {files[0]} ({srs})")
                 
     return srs
 
@@ -49,6 +56,11 @@ def scan_for_srs(files, all_must_match = True):
 #
 # returns silvimetric.resources.bounds.Bounds object
 def scan_file_for_bounds(file):
+    """Use PDAL quickinfo to get bounding box for data in file.
+
+    :return: Return SilviMetric Bounds object
+    """
+
     reader = pdal.Reader(file)
     p = reader.pipeline()
     qi = p.quickinfo[reader.type]
@@ -62,6 +74,11 @@ def scan_file_for_bounds(file):
 #
 # returns silvimetric.resources.bounds.Bounds object
 def scan_for_bounds(files, resolution, adjust_to_cell_lines = True):
+    """Use PDAL quickinfo to get overall bounding box for data in a list of files.
+
+    :return: Return SilviMetric Bounds object optionally, adjusted to cell lines
+    """
+
     # bogus bounds to start
     bounds = Bounds(sys.float_info.max, sys.float_info.max, sys.float_info.min, sys.float_info.min)
 
@@ -169,17 +186,24 @@ def build_pipeline(pointdata_filename
                     , skip_keypoint = False
                     , skip_withheld = True
                     , skip_overlap = False
+                    , override_srs = ""
                     , do_HAG = False
                     , ground_VRT = ""
                     , min_HAG = -5.0
                     , max_HAG = 150.0
+                    , out_srs = ""
                    ):
+    """Create pipeline to feed points to SilveMetric
+
+    :raises Exception: The same classes are included in add_classes and skip_classes
+    :return: Return PDAL pipline
+    """
+
     # check for classes that are in both add_classes and skip_classes
     if len(add_classes) and len(skip_classes):
         for cls in add_classes:
             if cls in skip_classes:
-                print(f"You can't specify the same class in add_classes {add_classes} and skip_classes {skip_classes}")
-                sys.exit(1)
+                raise Exception(f"You can't specify the same class in add_classes {add_classes} and skip_classes {skip_classes}")
                 
     # build expression
     exp = ""
@@ -235,22 +259,39 @@ def build_pipeline(pointdata_filename
     if len(exp) > 0:
         exp = "(" + exp + ")"
         
+    # build point reader stage
+    stage = pdal.Reader(pointdata_filename)
+
+    # override srs for points...
+    if override_srs != "":
+        stage._options['override_srs'] = f"{override_srs}"
+
     # build pipeline
-    p = pdal.Reader(pointdata_filename)
+    p = pdal.Pipeline([stage])
 
     if len(exp) > 0:
         p |= pdal.Filter.expression(expression = exp)
     
+    # assumes DEM VRT and point data use same srs
     if do_HAG:
         p |= pdal.Filter.hag_dem(raster = ground_VRT, zero_ground = False)
         p |= pdal.Filter.expression(expression = f"HeightAboveGround >= {min_HAG} && HeightAboveGround <= {max_HAG}")
-        
+    
+    # do projection after HAG so we can use source DEM VRT
+    if out_srs != "":
+        p |= pdal.Filter.reprojection(out_srs = f"{out_srs}")
+
     # return pipeline
     return p
 
 ###### write pipeline file ######
 # Write pipeline to json file
 def write_pipeline(p, filename):
+    """Write pipeline
+
+    :return: None
+    """
+
     f = open(filename, "w")
     f.write(p.pipeline)
     f.close()

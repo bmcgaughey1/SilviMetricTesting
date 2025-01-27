@@ -1,0 +1,28 @@
+{
+  "pipeline":
+  [
+    {
+      "filename": "test.laz",
+      "tag": "readers_las1",
+      "type": "readers.las"
+    },
+    {
+      "expression": "(((Classification != 7) && (Classification != 18) && (Classification != 9)) && (Synthetic != 1) && (Withheld != 1))",
+      "inputs":
+      [
+        "readers_las1"
+      ],
+      "tag": "filters_expression1",
+      "type": "filters.expression"
+    },
+    {
+      "inputs":
+      [
+        "filters_expression1"
+      ],
+      "out_srs": "EPSG:26910",
+      "tag": "filters_reprojection1",
+      "type": "filters.reprojection"
+    }
+  ]
+}
