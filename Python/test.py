@@ -62,6 +62,7 @@ b.adjust_to_cell_lines(30)
 print(f"adjuste file bounds: {b}")
  """
 
+""" 
 # convert .laz files to COPC
 folder = "H:/FUSIONTestData/normalized"
 # get list of COPC assets in data folder...could also be a list of URLs
@@ -75,4 +76,6 @@ for asset in assets:
 
     # execute
     p.execute()
+
+ """
 

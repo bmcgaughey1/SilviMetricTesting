@@ -120,13 +120,14 @@ def make_metric():
 # extend beyond the current dataset, as well as the CRS of the data, the list
 # of attributes that will be used, as well as metrics. The config will be stored
 # in the database for future processes to use.
-def db_metric_subset():
+def db_metric_subset(normalized):
     perc_75 = make_metric()
     attrs = [
         Pdal_Attributes[a]
-        # for a in ['Intensity', 'HeightAboveGround']
-        #for a in ['Z', 'Intensity', 'HeightAboveGround']
-        for a in ['Z', 'Intensity']
+        if normalized:
+            for a in ['Z', 'Intensity']
+        else:
+            for a in ['Z', 'Intensity', 'HeightAboveGround']
     ]
     metrics = [ mean, sm_max, sm_min ]
     metrics.append(perc_75)
@@ -134,12 +135,14 @@ def db_metric_subset():
         attrs=attrs, metrics=metrics, tdb_dir=db_dir)
     storage = Storage.create(st_config)
 
-def db():
+def db(normalized):
     #perc_75 = make_metric()
     attrs = [
         Pdal_Attributes[a]
-        # for a in ['Intensity', 'HeightAboveGround']
-        for a in ['Z', 'Intensity', 'HeightAboveGround']
+        if normalized:
+            for a in ['Z', 'Intensity']
+        else:
+            for a in ['Z', 'Intensity', 'HeightAboveGround']
     ]
     #metrics = [ mean, sm_max, sm_min ]
     #metrics.append(perc_75)
@@ -317,13 +320,25 @@ if __name__ == "__main__":
     # there are good points marked as overlap that should be kept. Easy solution is to drop all outliers but 
     # this will drop lots of good points. Best solution would be to add outlier filtering to pipeline or use
     # a height filter after computing HAG. Ground models were derived from class 2 points in a FUSION run.
-    #folder = "H:/FUSIONTestData"
-    folder = "H:/FUSIONTestData/normalized/COPC"
-    groundFolder = "H:/FUSIONTestData/ground"
+
+    # flag when using data normalized by FUSION instead of doing normalization with PDAL
+    normalized = True
+
+    if normalized:
+        #folder = "H:/FUSIONTestData"
+        folder = "H:/FUSIONTestData/normalized/COPC"
     
-    db_dir_path = Path(curpath  / "plumas_normalized.tdb")
-    db_dir = db_dir_path.as_posix()
-    out_dir = (curpath / "plumas_normalized_tifs").as_posix()
+        db_dir_path = Path(curpath  / "plumas_normalized.tdb")
+        db_dir = db_dir_path.as_posix()
+        out_dir = (curpath / "plumas_normalized_tifs").as_posix()
+    else:
+        folder = "H:/FUSIONTestData"
+    
+        db_dir_path = Path(curpath  / "plumas.tdb")
+        db_dir = db_dir_path.as_posix()
+        out_dir = (curpath / "plumas_tifs").as_posix()
+
+    groundFolder = "H:/FUSIONTestData/ground"
 
     pipeline_filename = "../TestOutput/__pl__.json"
     ground_VRT_filename = "../TestOutput/__grnd__.vrt"
@@ -362,20 +377,22 @@ if __name__ == "__main__":
     # delete existing database, add metrics and create database
     rmtree(db_dir, ignore_errors=True)
     make_metric()
-    # db()
-    db_metric_subset()
+    # db(normalized)
+    db_metric_subset(normalized)
 
     # walk through assets
     for asset in assets:
     #asset = assets[0]
     #if True:
         # print(f"Processing asset: {asset}\n")
-        #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, do_HAG = True, ground_VRT = ground_VRT_filename, min_HAG = 2.0)
-        p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, do_HAG = False, ground_VRT = ground_VRT_filename, min_HAG = 2.0)
+        if normalized:
+            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, do_HAG = False, ground_VRT = ground_VRT_filename, min_HAG = 2.0)
 
-        # add height filtering manually since Z is acutally HAG
-        p |= pdal.Filter.expression(expression = f"Z >= 2.0 && Z <= 150.0")
-  
+            # add height filtering manually since Z is acutally HAG
+            p |= pdal.Filter.expression(expression = f"Z >= 2.0 && Z <= 150.0")
+        else:
+            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, do_HAG = True, ground_VRT = ground_VRT_filename, min_HAG = 2.0)
+
         # write pipeline file so we can pass it to scan and shatter
         write_pipeline(p, pipeline_filename)
 
