@@ -18,63 +18,67 @@ from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 ##########################  F U N C T I O N S  ################################
 ###############################################################################    
 ###### scan for srs ######
-# scan a list of files or URLs for srs info. Optionally check that all files
+# scan a list of assets for srs info. Optionally check that all assets
 # in list have same srs.
 #
 # Returns valid srs if successful, empty string otherwise
-def scan_for_srs(files, all_must_match = True):
-    """Use PDAL quickinfo to get srs for first file in list of files. Optionally,
-    check that all files in list have same srs.
+def scan_for_srs(assets, all_must_match = True):
+    """Use PDAL quickinfo to get srs for first asset in list of assets. Optionally,
+    check that all assets in list have same srs.
 
-    :raises Exception: srs for files in list are different from srs for first file
+    :raises Exception: srs for assets in list are different from srs for first asset
     :return: srs string
     """
 
-    if len(files) == 0:
+    if len(assets) == 0:
         return ""
         
-    # use PDAL python bindings to find the srs of our data...look at first file
-    reader = pdal.Reader(files[0])
+    # use PDAL python bindings to find the srs of our data...look at first asset
+    reader = pdal.Reader(assets[0])
     p = reader.pipeline()
     qi = p.quickinfo[reader.type]
     srs = json.dumps(qi['srs']['json'])
     
-    # check for matching SRS for all files...case insensitive
+    # check for matching SRS for all assets...case insensitive
     if all_must_match:
-        for i in range(1, len(files)):
-            reader = pdal.Reader(files[i])
+        for i in range(1, len(assets)):
+            reader = pdal.Reader(assets[i])
             p = reader.pipeline()
             qi = p.quickinfo[reader.type]
             fsrs = json.dumps(qi['srs']['json'])
             if fsrs.lower() != srs.lower():
-                raise Exception(f"srs for file: {files[i]} ({fsrs}) dose not match srs for first file: {files[0]} ({srs})")
+                raise Exception(f"srs for asset: {assets[i]} ({fsrs}) does not match srs for first asset: {assets[0]} ({srs})")
                 
     return srs
 
-###### scan an individual file or URL for bounding box ######
+###### scan an individual asset for bounding box ######
 # Use PDAl wuickinfo to get bounding box
 #
 # returns silvimetric.resources.bounds.Bounds object
-def scan_file_for_bounds(file):
-    """Use PDAL quickinfo to get bounding box for data in file.
+def scan_asset_for_bounds(asset):
+    """Use PDAL quickinfo to get bounding box for data in asset.
 
     :return: Return SilviMetric Bounds object
     """
 
-    reader = pdal.Reader(file)
+    reader = pdal.Reader(asset)
     p = reader.pipeline()
     qi = p.quickinfo[reader.type]
     fb = Bounds.from_string((json.dumps(qi['bounds'])))
     
     return fb
     
-###### scan for bounding box for a set of point files ######
-# Use PDAL quickinfo to get bounding box for each file and build an overall bounding box.
+###### scan for bounding box for a set of point assets ######
+# Use PDAL quickinfo to get bounding box for each asset and build an overall bounding box.
 # Optionally adjust (expand) bounding box to fall on cell boundaries.
 #
+# Probably don't want to adjust bounding box since the adjustment will happen again when the 
+# storage is created. adjust_to_lines() modified to expand bounds by 1/2 cell to match
+# FUSION alignment will add a cell each time it is called.
+#
 # returns silvimetric.resources.bounds.Bounds object
-def scan_for_bounds(files, resolution, adjust_to_cell_lines = True):
-    """Use PDAL quickinfo to get overall bounding box for data in a list of files.
+def scan_for_bounds(assets, resolution, adjust_to_cell_lines = False):
+    """Use PDAL quickinfo to get overall bounding box for data in a list of assets.
 
     :return: Return SilviMetric Bounds object optionally, adjusted to cell lines
     """
@@ -83,8 +87,8 @@ def scan_for_bounds(files, resolution, adjust_to_cell_lines = True):
     bounds = Bounds(sys.float_info.max, sys.float_info.max, sys.float_info.min, sys.float_info.min)
 
     # use PDAL python bindings to get bounds for each tile and update overall bounds
-    for file in files:
-        fb = scan_file_for_bounds(file)
+    for asset in assets:
+        fb = scan_asset_for_bounds(asset)
 
         # compare bounds
         if fb.minx < bounds.minx:
@@ -121,7 +125,8 @@ def db_metric_subset():
     attrs = [
         Pdal_Attributes[a]
         # for a in ['Intensity', 'HeightAboveGround']
-        for a in ['Z', 'Intensity', 'HeightAboveGround']
+        #for a in ['Z', 'Intensity', 'HeightAboveGround']
+        for a in ['Z', 'Intensity']
     ]
     metrics = [ mean, sm_max, sm_min ]
     metrics.append(perc_75)
@@ -173,13 +178,13 @@ def ex():
     extract(ex_config)
 
 ###### Build pipeline used to get data ######
-# This allows us to read individual files and shatter them. Pipeline
+# This allows us to read individual assets and shatter them. Pipeline
 # does some simple filtering using classification values and flags.
 # Pipeline also normalizes points using VRT and does simple HAG filtering.
 # Filtering is done in two steps. First using classification values
 # and flags, then, after normalization, using HAG. This reduces number
 # of points being normalized.
-def build_pipeline(pointdata_filename
+def build_pipeline(asset_filenme
                     , add_classes = []
                     , skip_classes = []
                     , skip_synthetic = True
@@ -260,7 +265,7 @@ def build_pipeline(pointdata_filename
         exp = "(" + exp + ")"
         
     # build point reader stage
-    stage = pdal.Reader(pointdata_filename)
+    stage = pdal.Reader(asset_filenme)
 
     # override srs for points...
     if override_srs != "":
@@ -312,23 +317,24 @@ if __name__ == "__main__":
     # there are good points marked as overlap that should be kept. Easy solution is to drop all outliers but 
     # this will drop lots of good points. Best solution would be to add outlier filtering to pipeline or use
     # a height filter after computing HAG. Ground models were derived from class 2 points in a FUSION run.
-    folder = "H:/FUSIONTestData"
-    groundFolder = "H:/FUSIONTestMetrics/Products_FUSIONTestMetrics_2024-05-16/FINAL_FUSIONTestMetrics_2024-05-16/BareGround_1METERS"
+    #folder = "H:/FUSIONTestData"
+    folder = "H:/FUSIONTestData/normalized/COPC"
+    groundFolder = "H:/FUSIONTestData/ground"
     
-    db_dir_path = Path(curpath  / "plumas.tdb")
+    db_dir_path = Path(curpath  / "plumas_normalized.tdb")
     db_dir = db_dir_path.as_posix()
-    out_dir = (curpath / "plumas_tifs").as_posix()
+    out_dir = (curpath / "plumas_normalized_tifs").as_posix()
 
     pipeline_filename = "../TestOutput/__pl__.json"
     ground_VRT_filename = "../TestOutput/__grnd__.vrt"
     
     resolution = 30 # 30 meter resolution
 
-    # get list of COPC files in data folder...could also be a list of URLs
-    files = [fn.as_posix() for fn in Path(folder).glob("*.copc.laz")]
+    # get list of COPC assets in data folder...could also be a list of URLs
+    assets = [fn.as_posix() for fn in Path(folder).glob("*.copc.laz")]
 
-    if len(files) == 0:
-        print(f"No point files found in {folder}\n")
+    if len(assets) == 0:
+        print(f"No point assets found in {folder}\n")
         quit()
 
     # get list of ground files
@@ -342,21 +348,15 @@ if __name__ == "__main__":
     gdal.UseExceptions()
     gvrt = gdal.BuildVRT(ground_VRT_filename, groundFiles)
     
-    # get overall bounding box for point data
-    bounds = scan_for_bounds(files, resolution)
+    # get overall bounding box for point data and adjust to cell lines
+    bounds = scan_for_bounds(assets, resolution)
+    #bounds = scan_asset_for_bounds(assets[0])
 
-    # adjust bounds to cell center origin to match FUSION outputs
-    ##### This doesn't work...when storage is created, bounds are aligned to cells again
-    # bounds.minx = bounds.minx - resolution / 2.0
-    # bounds.miny = bounds.miny - resolution / 2.0
-    # bounds.maxx = bounds.maxx + resolution / 2.0
-    # bounds.maxy = bounds.maxy + resolution / 2.0
-    
-    # get srs...also check that all files have same sts
-    srs = scan_for_srs(files, all_must_match = True)
+    # get srs...also check that all assets have same sts
+    srs = scan_for_srs(assets, all_must_match = True)
        
     if srs == "":
-        print(f"Missing or mismatched srs in files\n")
+        print(f"Missing or mismatched srs in assets\n")
         quit()
         
     # delete existing database, add metrics and create database
@@ -365,16 +365,22 @@ if __name__ == "__main__":
     # db()
     db_metric_subset()
 
-    # walk through files
-    for file in files:
-        # print(f"Processing file: {file}\n")
-        p = build_pipeline(file, skip_classes = [7,9,18], skip_overlap = True, do_HAG = True, ground_VRT = ground_VRT_filename, min_HAG = 2.0)
+    # walk through assets
+    for asset in assets:
+    #asset = assets[0]
+    #if True:
+        # print(f"Processing asset: {asset}\n")
+        #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, do_HAG = True, ground_VRT = ground_VRT_filename, min_HAG = 2.0)
+        p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, do_HAG = False, ground_VRT = ground_VRT_filename, min_HAG = 2.0)
 
+        # add height filtering manually since Z is acutally HAG
+        p |= pdal.Filter.expression(expression = f"Z >= 2.0 && Z <= 150.0")
+  
         # write pipeline file so we can pass it to scan and shatter
         write_pipeline(p, pipeline_filename)
 
-        # get bounds for individual file...not sure if this is necessary...can you use the full extent of all data?
-        fb = scan_file_for_bounds(file)
+        # get bounds for individual asset...not sure if this is necessary...can you use the full extent of all data?
+        fb = scan_asset_for_bounds(asset)
         
         # scan
         scan_info = sc(fb, pipeline_filename)
@@ -384,9 +390,10 @@ if __name__ == "__main__":
         
         # shatter
         sh(fb, tile_size, pipeline_filename)
-        # print(f"Finished file: {file}\n")
 
-    print(f"Finished all files!!\n")
+        # print(f"Finished asset: {asset}\n")
+
+    print(f"Finished all assets!!\n")
 
     # extract rasters
     ex()

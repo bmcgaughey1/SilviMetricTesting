@@ -2,27 +2,27 @@
   "pipeline":
   [
     {
-      "filename": "test.laz",
-      "tag": "readers_las1",
-      "type": "readers.las"
+      "filename": "H:/FUSIONTestData/normalized/COPC/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2133n2147.copc.laz",
+      "tag": "readers_copc1",
+      "type": "readers.copc"
     },
     {
-      "expression": "(((Classification != 7) && (Classification != 18) && (Classification != 9)) && (Synthetic != 1) && (Withheld != 1))",
+      "expression": "(((Classification != 7) && (Classification != 9) && (Classification != 18)) && (Synthetic != 1) && (Withheld != 1))",
       "inputs":
       [
-        "readers_las1"
+        "readers_copc1"
       ],
       "tag": "filters_expression1",
       "type": "filters.expression"
     },
     {
+      "expression": "Z >= 2.0 && Z <= 150.0",
       "inputs":
       [
         "filters_expression1"
       ],
-      "out_srs": "EPSG:26910",
-      "tag": "filters_reprojection1",
-      "type": "filters.reprojection"
+      "tag": "filters_expression2",
+      "type": "filters.expression"
     }
   ]
 }
