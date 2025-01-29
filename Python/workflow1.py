@@ -39,12 +39,12 @@ def db_metric_subset(normalized):
     if normalized:
         attrs = [
             Pdal_Attributes[a]
-            for a in ['Z', 'Intensity', 'HeightAboveGround']
+            for a in ['Z', 'Intensity']
         ]
     else:
         attrs = [
             Pdal_Attributes[a]
-            for a in ['Z', 'Intensity']
+            for a in ['Z', 'Intensity', 'HeightAboveGround']
         ]
 
     metrics = [ mean, sm_max, sm_min ]
@@ -58,12 +58,12 @@ def db(normalized):
     if normalized:
         attrs = [
             Pdal_Attributes[a]
-            for a in ['Z', 'Intensity', 'HeightAboveGround']
+            for a in ['Z', 'Intensity']
         ]
     else:
         attrs = [
             Pdal_Attributes[a]
-            for a in ['Z', 'Intensity']
+            for a in ['Z', 'Intensity', 'HeightAboveGround']
         ]
 
     #metrics = [ mean, sm_max, sm_min ]
