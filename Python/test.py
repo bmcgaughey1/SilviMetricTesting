@@ -15,7 +15,7 @@ from silvimetric import StorageConfig, ShatterConfig, ExtractConfig
 from silvimetric import scan, extract, shatter
 from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 
-from workflow1 import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_file_for_bounds
+from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds
 
 """ 
 # test working with list of planetary computer asset URLs
@@ -33,7 +33,7 @@ for i in range(0, len(URLs)):
 #signedURLs = pc.sign(URL)
 
 print(signedURLs[0])
-print(scan_file_for_bounds(signedURLs[0]))
+print(scan_asset_for_bounds(signedURLs[0]))
 
 #print(scan_for_bounds(signedURLs, 30))
 
@@ -51,12 +51,12 @@ write_pipeline(p, "../TestOutput/__testpl__.json")
 """ 
 # test for srs extraction
 print(scan_for_srs(["H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2130n2145.copc.laz"]))
-print(scan_file_for_bounds("H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2130n2145.copc.laz"))
+print(scan_asset_for_bounds("H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2130n2145.copc.laz"))
  """
 
 """ 
 # testing bounding box alignment
-b = scan_file_for_bounds("H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2130n2145.copc.laz")
+b = scan_asset_for_bounds("H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2130n2145.copc.laz")
 print(f"file bounds: {b}")
 b.adjust_to_cell_lines(30)
 print(f"adjuste file bounds: {b}")

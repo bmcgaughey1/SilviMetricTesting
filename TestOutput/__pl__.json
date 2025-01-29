@@ -2,7 +2,7 @@
   "pipeline":
   [
     {
-      "filename": "H:/FUSIONTestData/normalized/COPC/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2133n2147.copc.laz",
+      "filename": "H:/FUSIONTestData/normalized/COPC/subset/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2130n2145.copc.laz",
       "tag": "readers_copc1",
       "type": "readers.copc"
     },
