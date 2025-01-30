@@ -30,6 +30,7 @@ def scan_for_srs(assets: list[str], all_must_match = True) -> str:
     check that all assets in list have same srs.
 
     :raises Exception: srs for assets in list are different from srs for first asset
+    
     :return: srs string
     """
 
@@ -84,6 +85,7 @@ def scan_for_bounds(assets: list[str], resolution: float | int, adjust_to_cell_l
     """Use PDAL quickinfo to get overall bounding box for data in a list of assets.
 
     :raises Exception: List of assets is empty
+
     :return: Return SilviMetric Bounds object optionally, adjusted to cell lines
     """
 
@@ -120,6 +122,11 @@ def scan_for_bounds(assets: list[str], resolution: float | int, adjust_to_cell_l
 # Filtering is done in two steps. First using classification values
 # and flags, then, after normalization, using HAG. This reduces number
 # of points being normalized.
+
+# using hag_nn and hag_delaunay methods may be problematic given we will
+# be getting points cell by cell so ground points may be sparse or poorly
+# distributed.
+
 def build_pipeline(asset_filenme: str
                     , add_classes: list[int] = []
                     , skip_classes: list[int] = []
@@ -128,15 +135,19 @@ def build_pipeline(asset_filenme: str
                     , skip_withheld = True
                     , skip_overlap = False
                     , override_srs: str = ""
-                    , do_HAG = False
+                    , HAG_method: str | None = None       # choices: "delaunay", "nn", "dem", "vrt"..."dem" and "vrt" are equilvalent
                     , ground_VRT: str = ""
                     , min_HAG: float = -5.0
                     , max_HAG: float = 150.0
                     , out_srs: str = ""
+                    , HAG_replaces_Z = False
                    ):
     """Create pipeline to feed points to SilveMetric
 
     :raises Exception: The same classes are included in add_classes and skip_classes
+    :raises Exception: Invalid value for HAG_method. Valid choices: "delaunay", "nn", "dem", "vrt"..."dem" and "vrt" are equilvalent.
+    "dem" and "vrt" both expect a filename in ground_VRT that is either a single raster or a VRT name.
+
     :return: Return PDAL pipline
     """
 
@@ -214,13 +225,24 @@ def build_pipeline(asset_filenme: str
         p |= pdal.Filter.expression(expression = exp)
     
     # assumes DEM VRT and point data use same srs
-    if do_HAG:
-        p |= pdal.Filter.hag_dem(raster = ground_VRT, zero_ground = False)
+    if HAG_method != None:
+        if HAG_method.lower() == "delaunay":
+            p |= pdal.Filter.hag_delaunay(allow_extrapolation = True)
+        elif HAG_method.lower() == "nn":
+            p |= pdal.Filter.hag_nn(allow_extrapolation = True)
+        elif HAG_method.lower() in ["dem", "vrt"]:
+            p |= pdal.Filter.hag_dem(raster = ground_VRT, zero_ground = False)
+        else:
+            raise Exception(f"Invalid choice for HAG_method: {HAG_method}. Valid choices are delaunay, nn, dem, or vrt.")
         p |= pdal.Filter.expression(expression = f"HeightAboveGround >= {min_HAG} && HeightAboveGround <= {max_HAG}")
     
     # do projection after HAG so we can use source DEM VRT
     if out_srs != "":
         p |= pdal.Filter.reprojection(out_srs = f"{out_srs}")
+
+    # replace Z with HAG
+    if HAG_replaces_Z:
+        p |= pdal.Filter.ferry(dimensions = "HeightAboveGround=>Z")
 
     # return pipeline
     return p
@@ -238,12 +260,7 @@ def write_pipeline(p, filename: str) -> None:
             try:
                 f.write(p.pipeline)
             except (IOError, OSError):
-                f.close()
                 print("Error writing to file")
-    except (FileNotFoundError, PermissionError, OSError):
+    except (PermissionError, OSError):
         print("Error opening file")
-
-    #f = open(filename, "w")
-    #f.write(p.pipeline)
-    #f.close()
 

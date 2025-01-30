@@ -34,18 +34,12 @@ def make_metric():
 # extend beyond the current dataset, as well as the CRS of the data, the list
 # of attributes that will be used, as well as metrics. The config will be stored
 # in the database for future processes to use.
-def db_metric_subset(normalized):
+def db_metric_subset():
     perc_75 = make_metric()
-    if normalized:
-        attrs = [
-            Pdal_Attributes[a]
-            for a in ['Z', 'Intensity']
-        ]
-    else:
-        attrs = [
-            Pdal_Attributes[a]
-            for a in ['Z', 'Intensity', 'HeightAboveGround']
-        ]
+    attrs = [
+        Pdal_Attributes[a]
+        for a in ['Z', 'Intensity']
+    ]
 
     metrics = [ mean, sm_max, sm_min ]
     metrics.append(perc_75)
@@ -53,18 +47,13 @@ def db_metric_subset(normalized):
         attrs=attrs, metrics=metrics, tdb_dir=db_dir)
     storage = Storage.create(st_config)
 
-def db(normalized):
+def db():
+    # use full set of gridmetrics...not working as of 1/30/2025
     #perc_75 = make_metric()
-    if normalized:
-        attrs = [
-            Pdal_Attributes[a]
-            for a in ['Z', 'Intensity']
-        ]
-    else:
-        attrs = [
-            Pdal_Attributes[a]
-            for a in ['Z', 'Intensity', 'HeightAboveGround']
-        ]
+    attrs = [
+        Pdal_Attributes[a]
+        for a in ['Z', 'Intensity']
+    ]
 
     #metrics = [ mean, sm_max, sm_min ]
     #metrics.append(perc_75)
@@ -107,90 +96,91 @@ def ex():
 ###############################################################################    
 # make sure script is being run directly and not imported into another script
 if __name__ == "__main__":
+    # Test data is from USGS collection covering the Plumas National Forest In CA. These data have outliers 
+    # classified as 7 & 18 and outliers marked as overlap points but not as outliers (bad outlier classification). 
+    # In addition, there are good points marked as overlap that were used in the FUSION processing. 
+    # 
+    # One scenario is to drop all overlap points but this will drop lots of good points and outputs won't match
+    # FUSION outputs. FUSION filters points by classification and height so the best solution would be to use
+    # outlier filtering based on classification and height filtering after computing HAG to the pipeline used
+    # to pump data into SilviMetric.
+    #
+    # Ground models for the area were derived from class 2 points in a FUSION run.
+
     ########## Setup #############
-    # Create a path for our current working directory, as well as the path
-    # to our lidar data, the path to the database directory, and the path to the
-    # directory that will house the raster data.
-    curpath = Path(os.path.dirname(os.path.realpath(__file__)))
+    project_name = "Plumas"
+    resolution = 30
+    use_normalized_point_data = False        # True: data already has HAG, False: data has elevation
 
-    # Use test data from Plumas National Forest In CA. These data have outliers classified as 7 & 18. These data
-    # also have outliers marked as overlap points but not as outliers (bad outlier classification). In addition,
-    # there are good points marked as overlap that should be kept. Easy solution is to drop all outliers but 
-    # this will drop lots of good points. Best solution would be to add outlier filtering to pipeline or use
-    # a height filter after computing HAG. Ground models were derived from class 2 points in a FUSION run.
+    ########## Paths ##########
+    curpath = Path(os.path.dirname(os.path.realpath(__file__)))     # folder containing this python file
 
-    # flag when using data normalized by FUSION instead of doing normalization with PDAL
-    normalized = True
+    if use_normalized_point_data:
+        data_folder = "H:/FUSIONTestData/normalized/COPC"               # data normalized using FUSION
+        #data_folder = "H:/FUSIONTestData/normalized/COPC/subset"        # subset of data normalized using FUSION
 
-    if normalized:
-        # data normalized using FUSION
-        folder = "H:/FUSIONTestData/normalized/COPC/subset"
-    
-        db_dir_path = Path(curpath  / "plumas_normalized.tdb")
+        db_dir_path = Path(curpath  / f"../TestOutput/{project_name}_normalized.tdb")
         db_dir = db_dir_path.as_posix()
-        out_dir = (curpath / "plumas_normalized_tifs").as_posix()
+        out_dir = (curpath / f"../TestOutput/{project_name}_normalized_tifs").as_posix()
     else:
-        # original data...no HAG
-        folder = "H:/FUSIONTestData"
-    
-        db_dir_path = Path(curpath  / "plumas.tdb")
+        data_folder = "H:/FUSIONTestData"                               # COPC tiles from MPC, not normalized but have class 2 points
+        db_dir_path = Path(curpath  / f"../TestOutput/{project_name}_nn.tdb")
         db_dir = db_dir_path.as_posix()
-        out_dir = (curpath / "plumas_tifs").as_posix()
+        out_dir = (curpath / f"../TestOutput/{project_name}_nn_tifs").as_posix()
 
-    groundFolder = "H:/FUSIONTestData/ground"
+    ground_folder = "H:/FUSIONTestData/ground"
 
     pipeline_filename = "../TestOutput/__pl__.json"
     ground_VRT_filename = "../TestOutput/__grnd__.vrt"
     
     resolution = 30 # 30 meter resolution
 
+    ########## Collect and prepare assets: point tiles and DEM tiles ##########
     # get list of COPC assets in data folder...could also be a list of URLs
-    assets = [fn.as_posix() for fn in Path(folder).glob("*.copc.laz")]
+    assets = [fn.as_posix() for fn in Path(data_folder).glob("*.copc.laz")]
 
     if len(assets) == 0:
-        print(f"No point assets found in {folder}\n")
-        quit()
+        raise Exception(f"No point assets found in {data_folder}\n")
 
-    # get list of ground files
-    groundFiles = [fn.as_posix() for fn in Path(groundFolder).glob("*.img")]
-    
-    if len(groundFiles) == 0:
-        print(f"No ground files found in {groundFolder}\n")
-        quit()
-
-    # build ground VRT
-    gdal.UseExceptions()
-    gvrt = gdal.BuildVRT(ground_VRT_filename, groundFiles)
-    
-    # get overall bounding box for point data and adjust to cell lines
-    bounds = scan_for_bounds(assets, resolution)
-    #bounds = scan_asset_for_bounds(assets[0])
-
-    # get srs...also check that all assets have same sts
+    # get srs for point tiles...also check that all assets have same sts
     srs = scan_for_srs(assets, all_must_match = True)
        
     if srs == "":
         print(f"Missing or mismatched srs in assets\n")
         quit()
         
+    # get list of ground files
+    ground_assets = [fn.as_posix() for fn in Path(ground_folder).glob("*.img")]
+    
+    if len(ground_assets) == 0:
+        raise Exception(f"No ground files found in {ground_folder}\n")
+
+    # build ground VRT
+    gdal.UseExceptions()
+    gvrt = gdal.BuildVRT(ground_VRT_filename, ground_assets)
+    
+    ######### create db #########
+    # get overall bounding box for point data and adjust to cell lines
+    bounds = scan_for_bounds(assets, resolution)
+
     # delete existing database, add metrics and create database
     rmtree(db_dir, ignore_errors=True)
     make_metric()
-    # db(normalized)
-    db_metric_subset(normalized)
+    # db()      # uses default set of metrics...broken as of 1/30/2025
+    db_metric_subset()
 
-    # walk through assets
+    # walk through assets, scan and shatter
     for asset in assets:
-    #asset = assets[0]
-    #if True:
         # print(f"Processing asset: {asset}\n")
-        if normalized:
-            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, do_HAG = False, ground_VRT = ground_VRT_filename, min_HAG = 2.0)
+        if use_normalized_point_data:
+            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = None, ground_VRT = ground_VRT_filename, min_HAG = 2.0)
 
-            # add height filtering manually since Z is acutally HAG
+            # add height filtering manually since Z in data is acutally HAG
             p |= pdal.Filter.expression(expression = f"Z >= 2.0 && Z <= 150.0")
         else:
-            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, do_HAG = True, ground_VRT = ground_VRT_filename, min_HAG = 2.0)
+            #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, HAG_method = "dem", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
+            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, HAG_method = "nn", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
+            #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, HAG_method = "nn", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
 
         # write pipeline file so we can pass it to scan and shatter
         write_pipeline(p, pipeline_filename)
