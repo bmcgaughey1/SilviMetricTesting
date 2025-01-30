@@ -124,9 +124,9 @@ if __name__ == "__main__":
         out_dir = (curpath / f"../TestOutput/{project_name}_normalized_tifs").as_posix()
     else:
         data_folder = "H:/FUSIONTestData"                               # COPC tiles from MPC, not normalized but have class 2 points
-        db_dir_path = Path(curpath  / f"../TestOutput/{project_name}_nn.tdb")
+        db_dir_path = Path(curpath  / f"../TestOutput/{project_name}.tdb")
         db_dir = db_dir_path.as_posix()
-        out_dir = (curpath / f"../TestOutput/{project_name}_nn_tifs").as_posix()
+        out_dir = (curpath / f"../TestOutput/{project_name}_tifs").as_posix()
 
     ground_folder = "H:/FUSIONTestData/ground"
 
@@ -178,8 +178,8 @@ if __name__ == "__main__":
             # add height filtering manually since Z in data is acutally HAG
             p |= pdal.Filter.expression(expression = f"Z >= 2.0 && Z <= 150.0")
         else:
-            #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, HAG_method = "dem", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
-            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, HAG_method = "nn", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
+            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, HAG_method = "vrt", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
+            #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, HAG_method = "nn", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
             #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, HAG_method = "nn", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
 
         # write pipeline file so we can pass it to scan and shatter
