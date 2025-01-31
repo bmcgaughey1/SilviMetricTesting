@@ -1,0 +1,220 @@
+---
+title: "Comparing SilviMetric and FUSION outputs"
+author: "Robert J. McGaughey"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load packages
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(terra)
+library(sf)
+library(mapview)
+```
+
+## Setup
+
+```{r}
+HAGVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_tifs/"
+HAGNNfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_nn_tifs/"
+HAGFUSIONfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_normalized_tifs/"
+FUSIONfolder <- "H:/FUSIONTestMetrics/Products_FUSIONTestMetrics_2024-05-16/FINAL_FUSIONTestMetrics_2024-05-16/Metrics_30METERS/"
+
+SMfile <- "m_Z_max.tif"
+#SMfile <- "m_Z_mean.tif"
+FUSIONfile <- "elev_max_2plus_30METERS.img"
+```
+
+## Read raster data and display extent and summary info
+
+```{r results='hold'}
+HAGVRTrast <- rast(paste0(HAGVRTfolder, SMfile))
+HAGNNrast <- rast(paste0(HAGNNfolder, SMfile))
+HAGFUSIONrast <- rast(paste0(HAGFUSIONfolder, SMfile))
+FUSIONrast <- rast(paste0(FUSIONfolder, FUSIONfile))
+
+cat("FUSION raster:    ncol=", ncol(FUSIONrast), "   nrow=",nrow(FUSIONrast), "   cells=", ncol(FUSIONrast) * nrow(FUSIONrast), "\n")
+cat("HAGVRT raster:    ncol=", ncol(HAGVRTrast), "   nrow=",nrow(HAGVRTrast), "   cells=", ncol(HAGVRTrast) * nrow(HAGVRTrast), "\n")
+cat("HAGNN raster:     ncol=", ncol(HAGNNrast), "   nrow=",nrow(HAGNNrast), "   cells=", ncol(HAGNNrast) * nrow(HAGNNrast), "\n")
+cat("HAGFUSION raster: ncol=", ncol(HAGFUSIONrast), "   nrow=",nrow(HAGFUSIONrast), "   cells=", ncol(HAGFUSIONrast) * nrow(HAGFUSIONrast), "\n")
+
+cat("FUSION raster:    ")
+ext(FUSIONrast)
+cat("HAGVRT raster:    ")
+ext(HAGVRTrast)
+cat("HAGNN raster:     ")
+ext(HAGNNrast)
+cat("HAGFUSION raster: ")
+ext(HAGFUSIONrast)
+```
+
+## Adjust extents
+
+The rasters produced when using PDAL's hag_nn are different from those produced using other hag filters.
+I don't know for sure why but suspect it has to do with the extent of ground points compared to the extent
+of non-ground points.
+
+The HAGNN raster requires an extra operation to make it match the other rasters.
+
+FUSION rasters are assigned a srs using an ESRI's projection file. The format of these files differs from 
+the format used for the srs in the point cloud files so SilviMetric's srs doesn't exactly match FUSION's.
+To overcome this, I forced the srs for FUSION rasters to match those from SilviMetric.
+
+```{r echo=TRUE, results='hold'}
+tHAGVRTrast <- trim(HAGVRTrast)
+tHAGNNrast <- trim(HAGNNrast)   # different min Y///smaller by 1 cell
+tHAGNNrast <- crop(tHAGNNrast, tHAGVRTrast)
+tHAGFUSIONrast <- trim(HAGFUSIONrast)
+tFUSIONrast <- trim(FUSIONrast)
+cat("adjusted FUSION raster:    ")
+ext(tFUSIONrast)
+cat("adjusted HAGVRT raster:    ")
+ext(tHAGVRTrast)
+cat("adjusted HAGNN raster:     ")
+ext(tHAGNNrast)
+cat("adjusted HAGFUSION raster: ")
+ext(tHAGFUSIONrast)
+
+# force FUSION srs to match
+crs(tFUSIONrast) <- crs(tHAGFUSIONrast)
+```
+
+## Generate extent and summary information for adjusted rasters
+
+```{r echo=FALSE, results='hold'}
+cat("FUSION output:    ncol=", ncol(tFUSIONrast), "   nrow=",nrow(tFUSIONrast), "   cells=", ncol(tFUSIONrast) * nrow(tFUSIONrast), "\n")
+cat("HAGVRT output:    ncol=", ncol(tHAGVRTrast), "   nrow=",nrow(tHAGVRTrast), "   cells=", ncol(tHAGVRTrast) * nrow(tHAGVRTrast), "\n")
+cat("HAGNN output:     ncol=", ncol(tHAGNNrast), "   nrow=",nrow(tHAGNNrast), "   cells=", ncol(tHAGNNrast) * nrow(tHAGNNrast), "\n")
+cat("HAGFUSION output: ncol=", ncol(tHAGFUSIONrast), "   nrow=",nrow(tHAGFUSIONrast), "   cells=", ncol(tHAGFUSIONrast) * nrow(tHAGFUSIONrast), "\n")
+
+cat("FUSION raster:    ")
+summary(tFUSIONrast)
+cat("HAGVRT raster:    ")
+summary(tHAGVRTrast)
+cat("HAGNN raster:     ")
+summary(tHAGNNrast)
+cat("HAGFUSION raster: ")
+summary(tHAGFUSIONrast)
+```
+
+## Compare raster values for maximum height
+
+This metric (maximum HAG) doesn't involve any calculation so it basically tests that FUSION and SilviMetric
+are using the same HAG values. 
+
+The first test uses HAG computed using the VRT with PDAL's [hag_dem](https://pdal.io/en/stable/stages/filters.hag_dem.html)
+filter. The interpolation problem with PDAL mentioned above leads 
+to small differences between HAG compute by FUSION and using the VRT. In general, these differences are 
+largest at the edge of the coverage area.
+
+```{r}
+par(mfrow = c(1, 2))
+r <- tFUSIONrast - tHAGVRTrast
+summary(r)
+hist(r, nclass= 100, main = "FUSION minus SilviMetric -- maxHt", xlab = "HAG computed using VRT")
+plot(r, main = "FUSION minus SilviMetric -- maxHt")
+par(mfrow = c(1, 1))
+```
+
+The second test uses HAG computed using PDAL's [hag_nn](https://pdal.io/en/stable/stages/filters.hag_nn.html)
+filter. This produces similar differences compared to the VRT method. Again, differences are largest at the edge of the coverage area.
+
+```{r}
+par(mfrow = c(1, 2))
+r <- tFUSIONrast - tHAGNNrast
+summary(r)
+hist(r, nclass= 100, main = "FUSION minus SilviMetric -- maxHt", xlab = "HAG computed using hag_nn")
+plot(r, main = "FUSION minus SilviMetric -- maxHt")
+par(mfrow = c(1, 1))
+```
+
+The final test used FUSION to compute HAG for the point tiles. Then PDAL to convert the tiles back to COPC 
+format (FUSION doesn't write COPC format). The normalized point tiles were then used with SilviMetric (so no HAG computation was needed). This test, compared to the first test, highlights the difference in the HAG values
+computed in FUSION and PDAL. The maximum heights for cells are nearly identical with differences attributable 
+to numeric precision used for the HAG values (FUSION carries more significant digits...not necessarily more
+accurate values).
+
+```{r}
+par(mfrow = c(1, 2))
+r <- tFUSIONrast - tHAGFUSIONrast
+summary(r)
+hist(r, nclass= 100, main = "FUSION minus SilviMetric -- maxHt", xlab = "HAG computed using points normalized by FUSION")
+plot(r, main = "FUSION minus SilviMetric -- maxHt")
+par(mfrow = c(1, 1))
+```
+
+I suspect that differences in the third test also result from the rules used to select point for a cell. FUSION
+does not include points that ecatly fall on the top and right edges of a cell whereas, PDAL includes these points.
+While this does produce slightly different values for metrics, I don't think it affect the utility of the metrics.
+It is debatable which method is more "correct" but I don't expect to see large difference in metrics over large
+areas because of this difference...only for scattered individual cells.
+
+## Compare raster values for mean height
+
+This metric (mean HAG) involves calculation so it tests that FUSION and SilviMetric are using the same points
+and calculation methods. 
+
+```{r}
+SMfile <- "m_Z_mean.tif"
+FUSIONfile <- "elev_ave_2plus_30METERS.img"
+
+HAGVRTrast <- rast(paste0(HAGVRTfolder, SMfile))
+HAGNNrast <- rast(paste0(HAGNNfolder, SMfile))
+HAGFUSIONrast <- rast(paste0(HAGFUSIONfolder, SMfile))
+FUSIONrast <- rast(paste0(FUSIONfolder, FUSIONfile))
+
+tHAGVRTrast <- trim(HAGVRTrast)
+tHAGNNrast <- trim(HAGNNrast)   # different min Y///smaller by 1 cell
+tHAGNNrast <- crop(tHAGNNrast, tHAGVRTrast)
+tHAGFUSIONrast <- trim(HAGFUSIONrast)
+tFUSIONrast <- trim(FUSIONrast)
+
+# force FUSION srs to match
+crs(tFUSIONrast) <- crs(tHAGFUSIONrast)
+```
+
+This is a plot of the FUSION output for average height. Notice that there don't appear to be and artifacts
+related to flightlines. These data were collected using flightlines running from the SE to NW (and
+NW to SE) with low sidelap. Looking at some of the comparison plots (next the histograms), there appear to 
+be some patterns that match the areas of flightline overlap.
+
+```{r}
+plot(FUSIONrast, main = "FUSION -- aveHt")
+```
+
+```{r}
+par(mfrow = c(1, 2))
+r <- tFUSIONrast - tHAGVRTrast
+summary(r)
+hist(r, nclass= 100, main = "FUSION minus SilviMetric -- aveHt", xlab = "HAG computed using VRT")
+plot(r, main = "FUSION minus SilviMetric -- aveHt")
+par(mfrow = c(1, 1))
+```
+
+```{r}
+par(mfrow = c(1, 2))
+r <- tFUSIONrast - tHAGNNrast
+summary(r)
+hist(r, nclass= 100, main = "FUSION minus SilviMetric -- aveHt", xlab = "HAG computed using hag_nn")
+plot(r, main = "FUSION minus SilviMetric -- aveHt")
+par(mfrow = c(1, 1))
+```
+
+```{r}
+par(mfrow = c(1, 2))
+r <- tFUSIONrast - tHAGFUSIONrast
+summary(r)
+hist(r, nclass= 100, main = "FUSION minus SilviMetric -- aveHt", xlab = "HAG computed using points normalized by FUSION")
+plot(r, main = "FUSION minus SilviMetric -- aveHt")
+par(mfrow = c(1, 1))
+```
+
+As with the comparison of maximum height values, the smallest differences occur when FUSION was used to normalize
+the point data. For this metric, the HAG and the set of points affect the comparison.

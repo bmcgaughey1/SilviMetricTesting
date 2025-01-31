@@ -178,9 +178,9 @@ if __name__ == "__main__":
             # add height filtering manually since Z in data is acutally HAG
             p |= pdal.Filter.expression(expression = f"Z >= 2.0 && Z <= 150.0")
         else:
-            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, HAG_method = "vrt", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
-            #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, HAG_method = "nn", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
-            #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = True, HAG_method = "nn", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
+            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "vrt", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
+            #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
+            #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
 
         # write pipeline file so we can pass it to scan and shatter
         write_pipeline(p, pipeline_filename)
