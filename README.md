@@ -115,3 +115,7 @@ computer paths containing FUSION and SilviMetric outputs.
 R code is in the Rcode folder and is presented using RMarkdown rendered
 to PDF format. To review the comparison results, look at the PDF
 documents in the Rcode folder.
+
+## Results
+
+[results](https://github.com/bmcgaughey1/SilviMetricTesting/blob/f2fe47e20f8910a1aeb0b393639841acf73b431c/Rcode/MetricComparison.pdf)
