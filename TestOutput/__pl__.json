@@ -7,7 +7,7 @@
       "type": "readers.copc"
     },
     {
-      "expression": "(((Classification != 7) && (Classification != 9) && (Classification != 18)) && (Synthetic != 1) && (Withheld != 1) && (Overlap != 1))",
+      "expression": "(((Classification != 7) && (Classification != 9) && (Classification != 18)) && (Synthetic != 1) && (Withheld != 1))",
       "inputs":
       [
         "readers_copc1"

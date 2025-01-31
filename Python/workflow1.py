@@ -124,9 +124,9 @@ if __name__ == "__main__":
         out_dir = (curpath / f"../TestOutput/{project_name}_normalized_tifs").as_posix()
     else:
         data_folder = "H:/FUSIONTestData"                               # COPC tiles from MPC, not normalized but have class 2 points
-        db_dir_path = Path(curpath  / f"../TestOutput/{project_name}.tdb")
+        db_dir_path = Path(curpath  / f"../TestOutput/{project_name}_vrt.tdb")
         db_dir = db_dir_path.as_posix()
-        out_dir = (curpath / f"../TestOutput/{project_name}_tifs").as_posix()
+        out_dir = (curpath / f"../TestOutput/{project_name}_vrt_tifs").as_posix()
 
     ground_folder = "H:/FUSIONTestData/ground"
 

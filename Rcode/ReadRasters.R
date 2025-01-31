@@ -4,7 +4,7 @@ library(terra)
 library(sf)
 library(mapview)
 
-HAGVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_tifs/"
+HAGVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_vrt_tifs/"
 HAGNNfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_nn_tifs/"
 HAGFUSIONfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_normalized_tifs/"
 FUSIONfolder <- "H:/FUSIONTestMetrics/Products_FUSIONTestMetrics_2024-05-16/FINAL_FUSIONTestMetrics_2024-05-16/Metrics_30METERS/"
