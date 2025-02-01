@@ -38,11 +38,13 @@ def db_metric_subset():
     perc_75 = make_metric()
     attrs = [
         Pdal_Attributes[a]
-        for a in ['Z', 'Intensity']
+        for a in ['Z']
+        #for a in ['Z', 'Intensity']
     ]
 
-    metrics = [ mean, sm_max, sm_min ]
-    metrics.append(perc_75)
+    #metrics = [ mean, sm_max, sm_min ]
+    metrics = [ sm_max ]
+    #metrics.append(perc_75)
     st_config = StorageConfig(root=bounds, resolution=resolution, crs=srs,
         attrs=attrs, metrics=metrics, tdb_dir=db_dir)
     storage = Storage.create(st_config)
@@ -108,8 +110,8 @@ if __name__ == "__main__":
     # Ground models for the area were derived from class 2 points in a FUSION run.
 
     ########## Setup #############
-    project_name = "Plumas"
-    resolution = 30
+    project_name = "Plumas_CHM"
+    resolution = 1.5
     use_normalized_point_data = False        # True: data already has HAG, False: data has elevation
 
     ########## Paths ##########
@@ -133,8 +135,6 @@ if __name__ == "__main__":
     pipeline_filename = "../TestOutput/__pl__.json"
     ground_VRT_filename = "../TestOutput/__grnd__.vrt"
     
-    resolution = 30 # 30 meter resolution
-
     ########## Collect and prepare assets: point tiles and DEM tiles ##########
     # get list of COPC assets in data folder...could also be a list of URLs
     assets = [fn.as_posix() for fn in Path(data_folder).glob("*.copc.laz")]
@@ -192,7 +192,8 @@ if __name__ == "__main__":
         scan_info = sc(fb, pipeline_filename)
         
         # use recommended tile size
-        tile_size = int(scan_info['tile_info']['recommended'])
+        #tile_size = int(scan_info['tile_info']['recommended'])
+        tile_size = int(scan_info['tile_info']['mean'])
         
         # shatter
         sh(fb, tile_size, pipeline_filename)

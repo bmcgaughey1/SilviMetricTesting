@@ -51,3 +51,12 @@ hist(r, nclass= 100)
 r <- tFUSIONrast - tHAGFUSIONrast
 summary(r)
 hist(r, nclass= 100)
+
+
+
+
+
+folder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_CHM_vrt_tifs/"
+file <- "m_Z_max.tif"
+r <- rast(paste0(folder, file))
+plot(r)

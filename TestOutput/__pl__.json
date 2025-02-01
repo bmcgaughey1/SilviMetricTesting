@@ -16,19 +16,20 @@
       "type": "filters.expression"
     },
     {
-      "allow_extrapolation": "true",
       "inputs":
       [
         "filters_expression1"
       ],
-      "tag": "filters_hag_nn1",
-      "type": "filters.hag_nn"
+      "raster": "../TestOutput/__grnd__.vrt",
+      "tag": "filters_hag_dem1",
+      "type": "filters.hag_dem",
+      "zero_ground": "false"
     },
     {
       "expression": "HeightAboveGround >= 2.0 && HeightAboveGround <= 150.0",
       "inputs":
       [
-        "filters_hag_nn1"
+        "filters_hag_dem1"
       ],
       "tag": "filters_expression2",
       "type": "filters.expression"
