@@ -3,6 +3,7 @@
 library(terra)
 library(sf)
 library(mapview)
+library(fusionwrapr)
 
 HAGVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_vrt_tifs/"
 HAGNNfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_nn_tifs/"
@@ -56,7 +57,13 @@ hist(r, nclass= 100)
 
 
 
-folder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_CHM_vrt_tifs/"
-file <- "m_Z_max.tif"
-r <- rast(paste0(folder, file))
+HAGVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_CHM_vrt_tifs/"
+SMfile <- "m_Z_max.tif"
+r <- rast(paste0(HAGVRTfolder, SMfile))
 plot(r)
+summary(r)
+writeDTM(r, paste0(HAGVRTfolder, "m_Z_max.dtm"), xyunits = "M", zunits = "M", coordsys = 2, zone=10, horizdatum = 2, vertdatum = 2)
+
+# didn't do a CHM in AP run
+FUSIONfolder <- "H:/FUSIONTestMetrics/Products_FUSIONTestMetrics_2024-05-16/FINAL_FUSIONTestMetrics_2024-05-16/Metrics_30METERS/"
+FUSIONfile <- "elev_max_2plus_30METERS.img"
