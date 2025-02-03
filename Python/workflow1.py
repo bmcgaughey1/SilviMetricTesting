@@ -35,9 +35,10 @@ if __name__ == "__main__":
     # Ground models for the area were derived from class 2 points in a FUSION run.
 
     ########## Setup #############
-    project_name = "Plumas_CHM"
-    resolution = 1.5
+    project_name = "Plumas"
+    resolution = 30.0
     use_normalized_point_data = False        # True: data already has HAG, False: data has elevation
+    HAG_method = "vrt"
 
     ########## Paths ##########
     curpath = Path(os.path.dirname(os.path.realpath(__file__)))     # folder containing this python file
@@ -51,9 +52,9 @@ if __name__ == "__main__":
         out_dir = (curpath / f"../TestOutput/{project_name}_normalized_tifs").as_posix()
     else:
         data_folder = "H:/FUSIONTestData"                               # COPC tiles from MPC, not normalized but have class 2 points
-        db_dir_path = Path(curpath  / f"../TestOutput/{project_name}_vrt.tdb")
+        db_dir_path = Path(curpath  / f"../TestOutput/{project_name}_{HAG_method}.tdb")
         db_dir = db_dir_path.as_posix()
-        out_dir = (curpath / f"../TestOutput/{project_name}_vrt_tifs").as_posix()
+        out_dir = (curpath / f"../TestOutput/{project_name}_{HAG_method}_tifs").as_posix()
 
     ground_folder = "H:/FUSIONTestData/ground"
 
@@ -103,9 +104,12 @@ if __name__ == "__main__":
             # add height filtering manually since Z in data is acutally HAG
             p |= pdal.Filter.expression(expression = f"Z >= 2.0 && Z <= 150.0")
         else:
-            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "vrt", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
-            #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
-            #p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
+            if HAG_method.lower() == "vrt":
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "vrt", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
+            if HAG_method.lower() == "delaunay":
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
+            if HAG_method.lower() == "nn":
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", ground_VRT = ground_VRT_filename, min_HAG = 2.0, HAG_replaces_Z = True)
 
         # write pipeline file so we can pass it to scan and shatter
         write_pipeline(p, pipeline_filename)
