@@ -46,7 +46,8 @@ if __name__ == "__main__":
     project_name = "Plumas_CHM"
     resolution = 1.5
     use_normalized_point_data = False        # True: data already has HAG computed by FUSION, False: data has elevation
-    HAG_method = "vrt"
+    HAG_method = "vrt"                       # choices: "vrt", "delaunay", "nn"
+    min_HAG = 0.0
 
     ########## Paths ##########
     curpath = Path(os.path.dirname(os.path.realpath(__file__)))     # folder containing this python file
@@ -78,7 +79,7 @@ if __name__ == "__main__":
     if len(assets) == 0:
         raise Exception(f"No point assets found in {data_folder}\n")
 
-    # get srs for point tiles...also check that all assets have same sts
+    # get srs for point tiles...also check that all assets have same srs
     srs = scan_for_srs(assets, all_must_match = True)
        
     if srs == "":
@@ -113,14 +114,14 @@ if __name__ == "__main__":
             p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False)
 
             # add height filtering manually since Z in data is actually HAG. build_pipeline() does filtering on HeightAboveGround, then ferries HeightAboveGround as Z
-            p |= pdal.Filter.expression(expression = f"Z >= 0.0 && Z <= 150.0")
+            p |= pdal.Filter.expression(expression = f"Z >= {min_HAG} && Z <= 150.0")
         else:
             if HAG_method.lower() == "vrt":
-                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "vrt", ground_VRT = ground_VRT_filename, min_HAG = 0.0, HAG_replaces_Z = True)
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "vrt", ground_VRT = ground_VRT_filename, min_HAG = min_HAG, HAG_replaces_Z = True)
             if HAG_method.lower() == "delaunay":
-                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", ground_VRT = ground_VRT_filename, min_HAG = 0.0, HAG_replaces_Z = True)
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", min_HAG = min_HAG, HAG_replaces_Z = True)
             if HAG_method.lower() == "nn":
-                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", ground_VRT = ground_VRT_filename, min_HAG = 0.0, HAG_replaces_Z = True)
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", min_HAG = min_HAG, HAG_replaces_Z = True)
 
         # write pipeline file so we can pass it to scan and shatter
         write_pipeline(p, pipeline_filename)
