@@ -40,6 +40,7 @@ if __name__ == "__main__":
     use_normalized_point_data = False        # True: data already has HAG, False: data has elevation
     HAG_method = "vrt"                       # choices: "vrt", "delaunay", "nn"
     min_HAG = 2.0
+    max_HAG = 150.0
 
     ########## Paths ##########
     curpath = Path(os.path.dirname(os.path.realpath(__file__)))     # folder containing this python file
@@ -100,17 +101,17 @@ if __name__ == "__main__":
     for asset in assets:
         # print(f"Processing asset: {asset}\n")
         if use_normalized_point_data:
-            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = None, ground_VRT = ground_VRT_filename, min_HAG = min_HAG)
+            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = None, ground_VRT = ground_VRT_filename)
 
             # add height filtering manually since Z in data is acutally HAG
-            p |= pdal.Filter.expression(expression = f"Z >= {min_HAG} && Z <= 150.0")
+            p |= pdal.Filter.expression(expression = f"Z >= {min_HAG} && Z <= {max_HAG}")
         else:
             if HAG_method.lower() == "vrt":
-                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "vrt", ground_VRT = ground_VRT_filename, min_HAG = min_HAG, HAG_replaces_Z = True)
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "vrt", ground_VRT = ground_VRT_filename, min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True)
             if HAG_method.lower() == "delaunay":
-                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", min_HAG = min_HAG, HAG_replaces_Z = True)
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True)
             if HAG_method.lower() == "nn":
-                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", min_HAG = min_HAG, HAG_replaces_Z = True)
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True)
 
         # write pipeline file so we can pass it to scan and shatter
         write_pipeline(p, pipeline_filename)
