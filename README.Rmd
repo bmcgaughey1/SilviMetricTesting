@@ -13,10 +13,14 @@ knitr::opts_chunk$set(
 
 # SilviMetric Testing
 
-**Testing uses the pixel_is_point branch from the SilviMetric repo (v1.3.1). This branch implements a change
+**Testing uses the pixel_is_point branch from the [SilviMetric repo](https://github.com/hobuinc/silvimetric) 
+(v1.3.1). This branch implements a change
 to the alignment of SilviMetric's cell structure so it matchs the structure used by FUSION. In short,
 FUSION's alignment is such that pixel centers fall on a multiple of the cell size. The main branch in the
 repo uses and alignment such that the cell edges fall on a multiple of the cell size.**
+
+Ultimately, I think we want SilviMetric to offer both cell alignment options and store the alignment
+method in StorageConfig.
 
 ## Example lidar data
 
@@ -102,6 +106,16 @@ R code is in the Rcode folder and is presented using RMarkdown rendered to PDF f
 results, look at the PDF documents in the Rcode folder.
 
 ## Results
+
+I compared several metric outputs and found differences that are mostly related to the method used to construct
+the DEM used to compute HAG. When running SilviMetric using point data normalized by FUSION, differences are
+very small and I think the differences are due to the set of points used for the cells. FUSION omits points on
+the right and top edges of cells but SilviMetric (PDAL) includes these points.
+
+I also compared a 1.5m CHM built in a separate run of SilviMetric using all points with HAG >= 0.0. This
+comparison is a little wonky because FUSION fills "holes" in the CHM using bilinear interpolation and
+SilviMetric does not (this would best be a post-processing step using the SilviMetric CHM). This behavior 
+can be controlled in FUSION.
 
 [results](https://github.com/bmcgaughey1/SilviMetricTesting/blob/f2fe47e20f8910a1aeb0b393639841acf73b431c/Rcode/MetricComparison.pdf)
 

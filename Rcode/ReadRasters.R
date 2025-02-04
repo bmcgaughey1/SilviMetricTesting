@@ -56,14 +56,27 @@ hist(r, nclass= 100)
 
 
 
-
-HAGVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_CHM_vrt_tifs/"
+# compare CHMs
+# NOTE: need to use pixel-is-cell alignment in SilviMetric to align with FUSION CHM
+CHMVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_CHM_vrt_tifs/"
 SMfile <- "m_Z_max.tif"
-r <- rast(paste0(HAGVRTfolder, SMfile))
+r <- rast(paste0(CHMVRTfolder, SMfile))
 plot(r)
-summary(r)
-writeDTM(r, paste0(HAGVRTfolder, "m_Z_max.dtm"), xyunits = "M", zunits = "M", coordsys = 2, zone=10, horizdatum = 2, vertdatum = 2)
+#summary(r)
+#writeDTM(r, paste0(HAGVRTfolder, "m_Z_max.dtm"), xyunits = "M", zunits = "M", coordsys = 2, zone=10, horizdatum = 2, vertdatum = 2)
 
 # didn't do a CHM in AP run
-FUSIONfolder <- "H:/FUSIONTestMetrics/Products_FUSIONTestMetrics_2024-05-16/FINAL_FUSIONTestMetrics_2024-05-16/Metrics_30METERS/"
-FUSIONfile <- "elev_max_2plus_30METERS.img"
+FUSIONfolder <- "H:/FUSIONTestMetrics/Products_FUSIONTestMetrics_2025-02-03/FINAL_FUSIONTestMetrics_2025-02-03/CanopyHeight_1p5METERS/"
+FUSIONfile <- "CHM_filled_3x_smoothed_1p5METERS.img"
+fr <- rast(paste0(FUSIONfolder, FUSIONfile))
+plot(fr)
+#summary(fr)
+crs(fr) <- crs(r)
+
+ext(r)
+ext(fr)
+
+tr <- crop(fr, r)
+ext(tr)
+diff <- tr - r
+summary(diff)

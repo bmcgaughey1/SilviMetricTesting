@@ -34,7 +34,7 @@ FUSIONfile <- "elev_max_2plus_30METERS.img"
 
 ## Read raster data and display extent and summary info
 
-```{r results='hold'}
+```{r echo=FALSE, results='hold'}
 HAGVRTrast <- rast(paste0(HAGVRTfolder, SMfile))
 HAGNNrast <- rast(paste0(HAGNNfolder, SMfile))
 HAGFUSIONrast <- rast(paste0(HAGFUSIONfolder, SMfile))
@@ -55,7 +55,7 @@ cat("HAGFUSION raster: ")
 ext(HAGFUSIONrast)
 ```
 
-## Adjust extents
+## Adjust extent
 
 The rasters produced when using PDAL's hag_nn are different from those produced using other hag filters.
 I don't know for sure why but suspect it has to do with the extent of ground points compared to the extent
@@ -67,7 +67,7 @@ FUSION rasters are assigned a srs using an ESRI's projection file. The format of
 the format used for the srs in the point cloud files so SilviMetric's srs doesn't exactly match FUSION's.
 To overcome this, I forced the srs for FUSION rasters to match those from SilviMetric.
 
-```{r echo=TRUE, results='hold'}
+```{r echo=FALSE, results='hold'}
 tHAGVRTrast <- trim(HAGVRTrast)
 tHAGNNrast <- trim(HAGNNrast)   # different min Y///smaller by 1 cell
 tHAGNNrast <- crop(tHAGNNrast, tHAGVRTrast)
@@ -86,7 +86,7 @@ ext(tHAGFUSIONrast)
 crs(tFUSIONrast) <- crs(tHAGFUSIONrast)
 ```
 
-## Generate extent and summary information for adjusted rasters
+## Extent and summary information for adjusted rasters
 
 ```{r echo=FALSE, results='hold'}
 cat("FUSION output:    ncol=", ncol(tFUSIONrast), "   nrow=",nrow(tFUSIONrast), "   cells=", ncol(tFUSIONrast) * nrow(tFUSIONrast), "\n")
@@ -94,34 +94,35 @@ cat("HAGVRT output:    ncol=", ncol(tHAGVRTrast), "   nrow=",nrow(tHAGVRTrast), 
 cat("HAGNN output:     ncol=", ncol(tHAGNNrast), "   nrow=",nrow(tHAGNNrast), "   cells=", ncol(tHAGNNrast) * nrow(tHAGNNrast), "\n")
 cat("HAGFUSION output: ncol=", ncol(tHAGFUSIONrast), "   nrow=",nrow(tHAGFUSIONrast), "   cells=", ncol(tHAGFUSIONrast) * nrow(tHAGFUSIONrast), "\n")
 
-cat("FUSION raster:    ")
+cat("FUSION raster:\n")
 summary(tFUSIONrast)
-cat("HAGVRT raster:    ")
+cat("HAGVRT raster:\n")
 summary(tHAGVRTrast)
-cat("HAGNN raster:     ")
+cat("HAGNN raster:\n")
 summary(tHAGNNrast)
-cat("HAGFUSION raster: ")
+cat("HAGFUSION raster:\n")
 summary(tHAGFUSIONrast)
 ```
 
 ## Compare raster values for maximum height
 
 This metric (maximum HAG) doesn't involve any calculation so it basically tests that FUSION and SilviMetric
-are using the same HAG values. 
+are using the same HAG values and same point for the cells.
 
 This is a plot of the FUSION output for maximum height. 
 
-```{r}
+```{r echo=FALSE}
 plot(FUSIONrast, main = "FUSION -- maxHt")
 ```
 
 The first test uses HAG computed using the VRT with PDAL's [hag_dem](https://pdal.io/en/stable/stages/filters.hag_dem.html)
 filter. The interpolation problem with PDAL mentioned above leads 
 to small differences between HAG compute by FUSION and using the VRT. In general, these differences are 
-largest at the edge of the coverage area.
+largest at the edge of the coverage area but there are patterns related to topogrphic features visible
+in the difference raster.
 
-```{r}
-par(mfrow = c(1, 2))
+```{r echo=FALSE, results='hold'}
+#par(mfrow = c(2, 1))
 r <- tFUSIONrast - tHAGVRTrast
 summary(r)
 hist(r, nclass= 100, main = "FUSION minus SilviMetric -- maxHt", xlab = "HAG computed using VRT")
@@ -130,10 +131,12 @@ par(mfrow = c(1, 1))
 ```
 
 The second test uses HAG computed using PDAL's [hag_nn](https://pdal.io/en/stable/stages/filters.hag_nn.html)
-filter. This produces similar differences compared to the VRT method. Again, differences are largest at the edge of the coverage area.
+filter. This produces similar differences compared to the VRT method. Again, differences are largest at the edge 
+of the coverage area. Interesting, topographic patterns are not reflected in the differences but are when using the
+VRT approach.
 
-```{r}
-par(mfrow = c(1, 2))
+```{r echo=FALSE, results='hold'}
+#par(mfrow = c(2, 1))
 r <- tFUSIONrast - tHAGNNrast
 summary(r)
 hist(r, nclass= 100, main = "FUSION minus SilviMetric -- maxHt", xlab = "HAG computed using hag_nn")
@@ -147,8 +150,8 @@ computed in FUSION and PDAL. The maximum heights for cells are nearly identical 
 to numeric precision used for the HAG values (FUSION carries more significant digits...not necessarily more
 accurate values).
 
-```{r}
-par(mfrow = c(1, 2))
+```{r echo=FALSE, results='hold'}
+#par(mfrow = c(2, 1))
 r <- tFUSIONrast - tHAGFUSIONrast
 summary(r)
 hist(r, nclass= 100, main = "FUSION minus SilviMetric -- maxHt", xlab = "HAG computed using points normalized by FUSION")
@@ -157,7 +160,7 @@ par(mfrow = c(1, 1))
 ```
 
 I suspect that differences in the third test also result from the rules used to select point for a cell. FUSION
-does not include points that ecatly fall on the top and right edges of a cell whereas, PDAL includes these points.
+does not include points that excatly fall on the top and right edges of a cell whereas, PDAL includes these points.
 While this does produce slightly different values for metrics, I don't think it affect the utility of the metrics.
 It is debatable which method is more "correct" but I don't expect to see large difference in metrics over large
 areas because of this difference...only for scattered individual cells.
@@ -167,7 +170,7 @@ areas because of this difference...only for scattered individual cells.
 This metric (mean HAG) involves calculation so it tests that FUSION and SilviMetric are using the same points
 and calculation methods. 
 
-```{r}
+```{r echo=FALSE, results='hold'}
 SMfile <- "m_Z_mean.tif"
 FUSIONfile <- "elev_ave_2plus_30METERS.img"
 
@@ -188,12 +191,14 @@ crs(tFUSIONrast) <- crs(tHAGFUSIONrast)
 
 This is a plot of the FUSION output for average height. 
 
-```{r}
+```{r echo=FALSE}
 plot(FUSIONrast, main = "FUSION -- aveHt")
 ```
 
-```{r}
-par(mfrow = c(1, 2))
+This is the difference using HAG computed using a VRT with FUSION-derived DEM tiles.
+
+```{r echo=FALSE, results='hold'}
+#par(mfrow = c(2, 1))
 r <- tFUSIONrast - tHAGVRTrast
 summary(r)
 hist(r, nclass= 100, main = "FUSION minus SilviMetric -- aveHt", xlab = "HAG computed using VRT")
@@ -201,8 +206,10 @@ plot(r, main = "FUSION minus SilviMetric -- aveHt")
 par(mfrow = c(1, 1))
 ```
 
-```{r}
-par(mfrow = c(1, 2))
+This is the difference using HAG computed using dem_nn.
+
+```{r echo=FALSE, results='hold'}
+#par(mfrow = c(2, 1))
 r <- tFUSIONrast - tHAGNNrast
 summary(r)
 hist(r, nclass= 100, main = "FUSION minus SilviMetric -- aveHt", xlab = "HAG computed using hag_nn")
@@ -210,8 +217,10 @@ plot(r, main = "FUSION minus SilviMetric -- aveHt")
 par(mfrow = c(1, 1))
 ```
 
-```{r}
-par(mfrow = c(1, 2))
+This is the difference using HAG computed by FUSION.
+
+```{r echo=FALSE, results='hold'}
+#par(mfrow = c(2, 1))
 r <- tFUSIONrast - tHAGFUSIONrast
 summary(r)
 hist(r, nclass= 100, main = "FUSION minus SilviMetric -- aveHt", xlab = "HAG computed using points normalized by FUSION")
@@ -220,4 +229,59 @@ par(mfrow = c(1, 1))
 ```
 
 As with the comparison of maximum height values, the smallest differences occur when FUSION was used to normalize
-the point data. For this metric, the HAG and the set of points affect the comparison.
+the point data. For this metric, the HAG and the set of points due to inclusion of points on the right and top edges of cells affect the comparison.
+
+## CHM comparison
+
+SilviMetric was used to produce a CHM using 1.5m resolution. HAG was computed using the FUSION-derived DEM 
+tiles and below ground points were dropped from the data. As with the metric rasters, some cropping of the 
+FUSION output was needed to match the extent of the SilviMetric CHM. FUSION's normal logic fills holes
+(areas with no points) using bilinear interpolation. This was turned off when creating this CHM.
+
+**FUSION's alignment for surfaces is different from the alignment for raster layers. For the CHM, the cell
+edges are a multiple of the cell size rather than the cell centers. This originated due to differences
+between lattice and raster (or GRID) formats and alignment. A version of SilviMetric that matched this alignment was used to create the SilviMetric CHM.**
+
+Looking closely at the following plots, I don't see many empty (red) cells (NODATA or NA values for cells) 
+in the FUSION output but do see some in the SilviMetric output. Not really sure why this is the case.
+
+```{r}
+```
+
+
+```{r echo=FALSE, results='hold'}
+# compare CHMs
+# NOTE: need to use pixel-is-cell alignment in SilviMetric to align with FUSION CHM
+# file name from FUSION hints at hole filling but this was disabled when creating the CHM
+CHMVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_CHM_vrt_tifs/"
+SMfile <- "m_Z_max.tif"
+r <- rast(paste0(CHMVRTfolder, SMfile))
+
+plot(r, main = "SilviMetric -- CHM", colNA = "red")
+
+FUSIONfolder <- "H:/FUSIONTestMetrics/Products_FUSIONTestMetrics_2025-02-04/FINAL_FUSIONTestMetrics_2025-02-04/CanopyHeight_1p5METERS/"
+FUSIONfile <- "CHM_filled_not_smoothed_1p5METERS.img"
+fr <- rast(paste0(FUSIONfolder, FUSIONfile))
+
+plot(fr, main = "FUSION -- CHM", colNA = "red")
+
+crs(fr) <- crs(r)
+
+cat("SilviMetric raster:\n")
+summary(r)
+
+cat("\n\nFUSION raster:\n")
+summary(fr)
+
+tfr <- crop(fr, r)
+diff <- tfr - r
+
+#par(mfrow = c(2, 1))
+cat("\n\nDifference raster:\n")
+summary(diff)
+hist(diff, nclass= 100, main = "FUSION minus SilviMetric -- CHM", xlab = "HAG computed using VRT")
+plot(diff, main = "FUSION minus SilviMetric -- CHM")
+par(mfrow = c(1, 1))
+
+```
+

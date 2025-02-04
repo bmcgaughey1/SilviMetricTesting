@@ -3,13 +3,16 @@
 
 # SilviMetric Testing
 
-**Testing uses the pixel_is_point branch from the SilviMetric repo
-(v1.3.1). This branch implements a change to the alignment of
-SilviMetric’s cell structure so it matchs the structure used by FUSION.
-In short, FUSION’s alignment is such that pixel centers fall on a
-multiple of the cell size. The main branch in the repo uses and
-alignment such that the cell edges fall on a multiple of the cell
-size.**
+**Testing uses the pixel_is_point branch from the [SilviMetric
+repo](https://github.com/hobuinc/silvimetric) (v1.3.1). This branch
+implements a change to the alignment of SilviMetric’s cell structure so
+it matchs the structure used by FUSION. In short, FUSION’s alignment is
+such that pixel centers fall on a multiple of the cell size. The main
+branch in the repo uses and alignment such that the cell edges fall on a
+multiple of the cell size.**
+
+Ultimately, I think we want SilviMetric to offer both cell alignment
+options and store the alignment method in StorageConfig.
 
 ## Example lidar data
 

@@ -9,7 +9,7 @@ from shutil import rmtree
 from osgeo import gdal
 
 from silvimetric import Storage, Metric, Bounds, Pdal_Attributes
-from silvimetric import StorageConfig, ShatterConfig, ExtractConfig
+from silvimetric import StorageConfig, ShatterConfig, ExtractConfig, ApplicationConfig
 from silvimetric import scan, extract, shatter
 from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 # from silvimetric.resources.metrics.__init__ import grid_metrics
@@ -48,6 +48,7 @@ if __name__ == "__main__":
     use_normalized_point_data = False        # True: data already has HAG computed by FUSION, False: data has elevation
     HAG_method = "vrt"                       # choices: "vrt", "delaunay", "nn"
     min_HAG = 0.0
+    max_HAG = 150.0
 
     ########## Paths ##########
     curpath = Path(os.path.dirname(os.path.realpath(__file__)))     # folder containing this python file
@@ -114,14 +115,14 @@ if __name__ == "__main__":
             p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False)
 
             # add height filtering manually since Z in data is actually HAG. build_pipeline() does filtering on HeightAboveGround, then ferries HeightAboveGround as Z
-            p |= pdal.Filter.expression(expression = f"Z >= {min_HAG} && Z <= 150.0")
+            p |= pdal.Filter.expression(expression = f"Z >= {min_HAG} && Z <= {max_HAG}")
         else:
             if HAG_method.lower() == "vrt":
-                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "vrt", ground_VRT = ground_VRT_filename, min_HAG = min_HAG, HAG_replaces_Z = True)
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "vrt", ground_VRT = ground_VRT_filename, min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True)
             if HAG_method.lower() == "delaunay":
-                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", min_HAG = min_HAG, HAG_replaces_Z = True)
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True)
             if HAG_method.lower() == "nn":
-                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", min_HAG = min_HAG, HAG_replaces_Z = True)
+                p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True)
 
         # write pipeline file so we can pass it to scan and shatter
         write_pipeline(p, pipeline_filename)
