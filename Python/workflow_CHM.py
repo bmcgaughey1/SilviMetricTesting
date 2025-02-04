@@ -47,7 +47,7 @@ if __name__ == "__main__":
     resolution = 1.5
     use_normalized_point_data = False        # True: data already has HAG computed by FUSION, False: data has elevation
     HAG_method = "vrt"                       # choices: "vrt", "delaunay", "nn"
-    min_HAG = 0.0
+    min_HAG = -100.0
     max_HAG = 150.0
 
     ########## Paths ##########
@@ -123,6 +123,9 @@ if __name__ == "__main__":
                 p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True)
             if HAG_method.lower() == "nn":
                 p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True)
+
+        # set HAG for points below ground to 0.0
+        p |= pdal.Filter.assign(value = "Z = 0.0 WHERE Z < 0.0")
 
         # write pipeline file so we can pass it to scan and shatter
         write_pipeline(p, pipeline_filename)

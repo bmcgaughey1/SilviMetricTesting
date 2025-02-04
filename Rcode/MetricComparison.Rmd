@@ -242,12 +242,13 @@ FUSION output was needed to match the extent of the SilviMetric CHM. FUSION's no
 edges are a multiple of the cell size rather than the cell centers. This originated due to differences
 between lattice and raster (or GRID) formats and alignment. A version of SilviMetric that matched this alignment was used to create the SilviMetric CHM.**
 
-Looking closely at the following plots, I don't see many empty (red) cells (NODATA or NA values for cells) 
-in the FUSION output but do see some in the SilviMetric output. Not really sure why this is the case.
+Looking closely at the following plots for my first run, I didn't see many empty (red) cells (NODATA or NA values for cells) in the FUSION output but did see some in the SilviMetric output. FUSION's behavior (CanopyModel) is 
+to replace any valid negative point height value with 0.0. The logic in my build_pipeline() function drops 
+points if there HAG is below 0.0. I added an assign filter to set the Z (HAG) value for points below 0.0 to
+0.0 and the empty cells were eliminated.
 
-```{r}
-```
-
+As with the HAG metrics, I suspect the interpolation process is causing the bulk of the difference. The remainder
+is due to the right and top edge points in cells in SilviMetric but this should be small differences.
 
 ```{r echo=FALSE, results='hold'}
 # compare CHMs
@@ -257,7 +258,7 @@ CHMVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_CHM_vr
 SMfile <- "m_Z_max.tif"
 r <- rast(paste0(CHMVRTfolder, SMfile))
 
-plot(r, main = "SilviMetric -- CHM", colNA = "red")
+plot(r, main = "SilviMetric -- CHM with VRT", colNA = "red")
 
 FUSIONfolder <- "H:/FUSIONTestMetrics/Products_FUSIONTestMetrics_2025-02-04/FINAL_FUSIONTestMetrics_2025-02-04/CanopyHeight_1p5METERS/"
 FUSIONfile <- "CHM_filled_not_smoothed_1p5METERS.img"
@@ -285,3 +286,42 @@ par(mfrow = c(1, 1))
 
 ```
 
+## SilviMetric CHM using fusion-normalized points
+
+For completeness, I created another CHM using SilviMetric using the points normalized by FUSION.
+
+```{r echo=FALSE, results='hold'}
+# compare CHMs
+# NOTE: need to use pixel-is-cell alignment in SilviMetric to align with FUSION CHM
+# file name from FUSION hints at hole filling but this was disabled when creating the CHM
+CHMVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_CHM_normalized_tifs/"
+SMfile <- "m_Z_max.tif"
+r <- rast(paste0(CHMVRTfolder, SMfile))
+
+plot(r, main = "SilviMetric -- CHM with FUSION-normalized points", colNA = "red")
+
+FUSIONfolder <- "H:/FUSIONTestMetrics/Products_FUSIONTestMetrics_2025-02-04/FINAL_FUSIONTestMetrics_2025-02-04/CanopyHeight_1p5METERS/"
+FUSIONfile <- "CHM_filled_not_smoothed_1p5METERS.img"
+fr <- rast(paste0(FUSIONfolder, FUSIONfile))
+
+plot(fr, main = "FUSION -- CHM", colNA = "red")
+
+crs(fr) <- crs(r)
+
+cat("SilviMetric raster:\n")
+summary(r)
+
+cat("\n\nFUSION raster:\n")
+summary(fr)
+
+tfr <- crop(fr, r)
+diff <- tfr - r
+
+#par(mfrow = c(2, 1))
+cat("\n\nDifference raster:\n")
+summary(diff)
+hist(diff, nclass= 100, main = "FUSION minus SilviMetric -- CHM", xlab = "HAG from FUSION-normalized points")
+plot(diff, main = "FUSION minus SilviMetric -- CHM")
+par(mfrow = c(1, 1))
+
+```

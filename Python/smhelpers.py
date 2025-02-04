@@ -241,7 +241,7 @@ def build_pipeline(asset_filenme: str
         p |= pdal.Filter.reprojection(out_srs = f"{out_srs}")
 
     # replace Z with HAG
-    if HAG_replaces_Z:
+    if HAG_method != None and HAG_replaces_Z:
         p |= pdal.Filter.ferry(dimensions = "HeightAboveGround=>Z")
 
     # return pipeline
