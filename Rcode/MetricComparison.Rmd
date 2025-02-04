@@ -244,8 +244,8 @@ between lattice and raster (or GRID) formats and alignment. A version of SilviMe
 
 Looking closely at the following plots for my first run, I didn't see many empty (red) cells (NODATA or NA values for cells) in the FUSION output but did see some in the SilviMetric output. FUSION's behavior (CanopyModel) is 
 to replace any valid negative point height value with 0.0. The logic in my build_pipeline() function drops 
-points if there HAG is below 0.0. I added an assign filter to set the Z (HAG) value for points below 0.0 to
-0.0 and the empty cells were eliminated.
+points if there HAG is below 0.0. I set the min_HAG value to -100.0 and added an assign filter to set the Z 
+(HAG) value for points below 0.0 to 0.0 and the empty cells were eliminated.
 
 As with the HAG metrics, I suspect the interpolation process is causing the bulk of the difference. The remainder
 is due to the right and top edge points in cells in SilviMetric but this should be small differences.
@@ -288,7 +288,8 @@ par(mfrow = c(1, 1))
 
 ## SilviMetric CHM using fusion-normalized points
 
-For completeness, I created another CHM using SilviMetric using the points normalized by FUSION.
+For completeness, I created another CHM using SilviMetric using the points normalized by FUSION. Differences are
+slightly smaller than the CHM created using VRT for normalization. Both CHMs are adequate for all applications.
 
 ```{r echo=FALSE, results='hold'}
 # compare CHMs
