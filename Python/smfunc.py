@@ -29,47 +29,39 @@ def make_metric():
 # extend beyond the current dataset, as well as the CRS of the data, the list
 # of attributes that will be used, as well as metrics. The config will be stored
 # in the database for future processes to use.
-def db_metric_subset(bounds, resolution, srs, db_dir):
+def db_metric_subset(bounds, resolution, alignment = 'pixel_is_point', srs, db_dir):
     perc_75 = make_metric()
-    attrs = [
-        Pdal_Attributes[a]
-        for a in ['Z']
-        #for a in ['Z', 'Intensity']
-    ]
-
-    #metrics = [ mean, sm_max, sm_min ]
-    metrics = [ sm_max ]
-    #metrics.append(perc_75)
-    st_config = StorageConfig(root=bounds, resolution=resolution, crs=srs,
-        attrs=attrs, metrics=metrics, tdb_dir=db_dir)
-    storage = Storage.create(st_config)
-
-def db_metric_CHM(bounds, resolution, srs, db_dir):
-    attrs = [
-        Pdal_Attributes[a]
-        for a in ['Z']
-    ]
-
-    metrics = [ sm_max ]
-    st_config = StorageConfig(root=bounds, resolution=resolution, crs=srs,
-        attrs=attrs, metrics=metrics, tdb_dir=db_dir)
-    storage = Storage.create(st_config)
-
-def db(bounds, resolution, srs, db_dir):
-    # use full set of gridmetrics...not working as of 1/30/2025
-    #perc_75 = make_metric()
     attrs = [
         Pdal_Attributes[a]
         for a in ['Z', 'Intensity']
     ]
 
-    #metrics = [ mean, sm_max, sm_min ]
-    #metrics.append(perc_75)
-    # metrics = [grid_metrics]
-    # st_config = StorageConfig(root=bounds, resolution=resolution, crs=srs,
-        # attrs=attrs, metrics=metrics, tdb_dir=db_dir)
+    metrics = [ mean, sm_max, sm_min ]
+    metrics.append(perc_75)
     st_config = StorageConfig(root=bounds, resolution=resolution, crs=srs,
-        attrs=attrs, tdb_dir=db_dir)
+        attrs=attrs, metrics=metrics, tdb_dir=db_dir, alignment = alignment)
+    storage = Storage.create(st_config)
+
+def db_metric_CHM(bounds, resolution, alignment = 'pixel_is_point', srs, db_dir):
+    attrs = [
+        Pdal_Attributes[a]
+        for a in ['Z']
+    ]
+
+    metrics = [ sm_max ]
+    st_config = StorageConfig(root=bounds, resolution=resolution, crs=srs,
+        attrs=attrs, metrics=metrics, tdb_dir=db_dir, alignment = alignmen)
+    storage = Storage.create(st_config)
+
+def db(bounds, resolution, alignment = 'pixel_is_point', srs, db_dir):
+    # use full set of gridmetrics...not working as of 1/30/2025
+    attrs = [
+        Pdal_Attributes[a]
+        for a in ['Z', 'Intensity']
+    ]
+
+    st_config = StorageConfig(root=bounds, resolution=resolution, crs=srs,
+        attrs=attrs, tdb_dir=db_dir, alignment = alignmen)
     storage = Storage.create(st_config)
 
 ####### Perform Scan #######

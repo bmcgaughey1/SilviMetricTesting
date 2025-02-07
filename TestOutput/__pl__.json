@@ -2,7 +2,7 @@
   "pipeline":
   [
     {
-      "filename": "H:/FUSIONTestData/normalized/COPC/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2133n2147.copc.laz",
+      "filename": "H:/FUSIONTestData/normalized/COPC/subset/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2130n2146.copc.laz",
       "tag": "readers_copc1",
       "type": "readers.copc"
     },
@@ -16,22 +16,13 @@
       "type": "filters.expression"
     },
     {
-      "expression": "Z >= -100.0 && Z <= 150.0",
+      "expression": "Z >= 2.0 && Z <= 150.0",
       "inputs":
       [
         "filters_expression1"
       ],
       "tag": "filters_expression2",
       "type": "filters.expression"
-    },
-    {
-      "inputs":
-      [
-        "filters_expression2"
-      ],
-      "tag": "filters_assign1",
-      "type": "filters.assign",
-      "value": "Z = 0.0 WHERE Z < 0.0"
     }
   ]
 }

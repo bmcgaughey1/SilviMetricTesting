@@ -9,25 +9,17 @@ from shutil import rmtree
 from osgeo import gdal
 
 from silvimetric import Storage, Metric, Bounds, Pdal_Attributes
-from silvimetric import StorageConfig, ShatterConfig, ExtractConfig, ApplicationConfig
+from silvimetric import StorageConfig, ShatterConfig, ExtractConfig
 from silvimetric import scan, extract, shatter
 from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 # from silvimetric.resources.metrics.__init__ import grid_metrics
 
 from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds
-from smfunc import make_metric, db_metric_subset, db_metric_CHM,  db, sc, sh, ex
+from smfunc import make_metric, db_metric_subset, db, sc, sh, ex
 
 ###############################################################################    
 ##########################       C O D E      #################################
 ###############################################################################    
-#
-# This scenario creates a CHM using point data. SilviMetric was not really 
-# designed for this task (single metric computed at high resolution) but
-# people have been asking if it can be used to create a CHM. For this task,
-# we only need the maximum HAG value for each cell so we need to limit the 
-# metrics and dimensions. In addition, the CHM requires all points (no
-# filtering using a height threshold).
-#
 # make sure script is being run directly and not imported into another script
 # this isn't really needed since we have no functions in this module.
 if __name__ == "__main__":
@@ -43,26 +35,19 @@ if __name__ == "__main__":
     # Ground models for the area were derived from class 2 points in a FUSION run.
 
     ########## Setup #############
-    project_name = "Plumas_CHM"
-    resolution = 1.5
-    use_normalized_point_data = False        # True: data already has HAG computed by FUSION, False: data has elevation
+    project_name = "Plumas_subset"
+    resolution = 30.0
+    use_normalized_point_data = True         # True: data already has HAG, False: data has elevation
     HAG_method = "vrt"                       # choices: "vrt", "delaunay", "nn"
-    min_HAG = -100.0
+    min_HAG = 2.0
     max_HAG = 150.0
 
     ########## Paths ##########
     curpath = Path(os.path.dirname(os.path.realpath(__file__)))     # folder containing this python file
 
-    ground_folder = "H:/FUSIONTestData/ground"
-
-    pipeline_filename = "../TestOutput/__pl__.json"
-    ground_VRT_filename = "../TestOutput/__grnd__.vrt"
-    
-    # I have normalized point data using FUSION to test DEM interpolation methods and allow a
-    # more consistent comparison with FUSION-derived outputs.
     if use_normalized_point_data:
-        data_folder = "H:/FUSIONTestData/normalized/COPC"               # data normalized using FUSION
-        #data_folder = "H:/FUSIONTestData/normalized/COPC/subset"        # subset of data normalized using FUSION
+        #data_folder = "H:/FUSIONTestData/normalized/COPC"               # data normalized using FUSION
+        data_folder = "H:/FUSIONTestData/normalized/COPC/subset"        # subset of data normalized using FUSION
 
         db_dir_path = Path(curpath  / f"../TestOutput/{project_name}_normalized.tdb")
         db_dir = db_dir_path.as_posix()
@@ -73,6 +58,11 @@ if __name__ == "__main__":
         db_dir = db_dir_path.as_posix()
         out_dir = (curpath / f"../TestOutput/{project_name}_{HAG_method}_tifs").as_posix()
 
+    ground_folder = "H:/FUSIONTestData/ground"
+
+    pipeline_filename = "../TestOutput/__pl__.json"
+    ground_VRT_filename = "../TestOutput/__grnd__.vrt"
+    
     ########## Collect and prepare assets: point tiles and DEM tiles ##########
     # get list of COPC assets in data folder...could also be a list of URLs
     assets = [fn.as_posix() for fn in Path(data_folder).glob("*.copc.laz")]
@@ -80,7 +70,7 @@ if __name__ == "__main__":
     if len(assets) == 0:
         raise Exception(f"No point assets found in {data_folder}\n")
 
-    # get srs for point tiles...also check that all assets have same srs
+    # get srs for point tiles...also check that all assets have same sts
     srs = scan_for_srs(assets, all_must_match = True)
        
     if srs == "":
@@ -102,19 +92,18 @@ if __name__ == "__main__":
     bounds = scan_for_bounds(assets, resolution)
 
     # delete existing database, add metrics and create database
-    # db_metric_CHM() only includes the Z dimension (HAG in this case) and maximum value metric
     rmtree(db_dir, ignore_errors=True)
-    db_metric_CHM(bounds, resolution, 'pixel_is_point', srs, db_dir)
+    make_metric()
+    # db(bounds, resolution, 'pixel_is_point', srs, db_dir)      # uses default set of metrics...broken as of 1/30/2025
+    db_metric_subset(bounds, resolution, 'pixel_is_point', srs, db_dir)
 
-    ########## walk through assets, scan and shatter ##########
+    # walk through assets, scan and shatter
     for asset in assets:
         # print(f"Processing asset: {asset}\n")
-
-        # build pipeline to feed data to SM
         if use_normalized_point_data:
-            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False)
+            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = None, ground_VRT = ground_VRT_filename)
 
-            # add height filtering manually since Z in data is actually HAG. build_pipeline() does filtering on HeightAboveGround, then ferries HeightAboveGround as Z
+            # add height filtering manually since Z in data is acutally HAG
             p |= pdal.Filter.expression(expression = f"Z >= {min_HAG} && Z <= {max_HAG}")
         else:
             if HAG_method.lower() == "vrt":
@@ -123,9 +112,6 @@ if __name__ == "__main__":
                 p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True)
             if HAG_method.lower() == "nn":
                 p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True)
-
-        # set HAG for points below ground to 0.0...FUSION sets points with negative height to 0.0 for CHM creation
-        p |= pdal.Filter.assign(value = "Z = 0.0 WHERE Z < 0.0")
 
         # write pipeline file so we can pass it to scan and shatter
         write_pipeline(p, pipeline_filename)
