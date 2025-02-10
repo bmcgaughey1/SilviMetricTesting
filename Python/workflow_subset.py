@@ -94,8 +94,8 @@ if __name__ == "__main__":
     # delete existing database, add metrics and create database
     rmtree(db_dir, ignore_errors=True)
     make_metric()
-    # db(bounds, resolution, 'pixel_is_point', srs, db_dir)      # uses default set of metrics...broken as of 1/30/2025
-    db_metric_subset(bounds, resolution, 'pixel_is_point', srs, db_dir)
+    # db(bounds, resolution, 'pixelispoint', srs, db_dir)      # uses default set of metrics...broken as of 1/30/2025
+    db_metric_subset(bounds, resolution, 'pixelispoint', srs, db_dir)
 
     # walk through assets, scan and shatter
     for asset in assets:

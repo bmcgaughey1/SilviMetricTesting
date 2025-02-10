@@ -29,7 +29,7 @@ def make_metric():
 # extend beyond the current dataset, as well as the CRS of the data, the list
 # of attributes that will be used, as well as metrics. The config will be stored
 # in the database for future processes to use.
-def db_metric_subset(bounds, resolution, alignment = 'pixel_is_point', srs, db_dir):
+def db_metric_subset(bounds, resolution, alignment = 'pixelispoint', srs, db_dir):
     perc_75 = make_metric()
     attrs = [
         Pdal_Attributes[a]
@@ -42,7 +42,7 @@ def db_metric_subset(bounds, resolution, alignment = 'pixel_is_point', srs, db_d
         attrs=attrs, metrics=metrics, tdb_dir=db_dir, alignment = alignment)
     storage = Storage.create(st_config)
 
-def db_metric_CHM(bounds, resolution, alignment = 'pixel_is_point', srs, db_dir):
+def db_metric_CHM(bounds, resolution, alignment = 'pixelispoint', srs, db_dir):
     attrs = [
         Pdal_Attributes[a]
         for a in ['Z']
@@ -53,7 +53,7 @@ def db_metric_CHM(bounds, resolution, alignment = 'pixel_is_point', srs, db_dir)
         attrs=attrs, metrics=metrics, tdb_dir=db_dir, alignment = alignmen)
     storage = Storage.create(st_config)
 
-def db(bounds, resolution, alignment = 'pixel_is_point', srs, db_dir):
+def db(bounds, resolution, alignment = 'pixelispoint', srs, db_dir):
     # use full set of gridmetrics...not working as of 1/30/2025
     attrs = [
         Pdal_Attributes[a]
