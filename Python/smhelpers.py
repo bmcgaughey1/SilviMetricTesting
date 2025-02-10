@@ -10,6 +10,7 @@ import json
 import datetime
 from shutil import rmtree
 from osgeo import gdal
+import pyproj
 
 from silvimetric import Storage, Metric, Bounds, Pdal_Attributes
 from silvimetric import StorageConfig, ShatterConfig, ExtractConfig
@@ -24,14 +25,17 @@ from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 # scan a list of assets for srs info. Optionally check that all assets
 # in list have same srs.
 #
-# Returns valid srs if successful, empty string otherwise
-def scan_for_srs(assets: list[str], all_must_match = True) -> str:
+# Returns valid srs in PROJJSON formatif successful, empty string otherwise
+#
+# testtype can be 'string' for character by character test or 'pyproj' for
+# result for pyproj.CRS.is_exact_same()
+def scan_for_srs(assets: list[str], all_must_match: bool = True, testtype: str = 'string') -> str:
     """Use PDAL quickinfo to get srs for first asset in list of assets. Optionally,
     check that all assets in list have same srs.
 
     :raises Exception: srs for assets in list are different from srs for first asset
     
-    :return: srs string
+    :return: srs string in PROJJSON format
     """
 
     if len(assets) == 0:
@@ -44,14 +48,26 @@ def scan_for_srs(assets: list[str], all_must_match = True) -> str:
     srs = json.dumps(qi['srs']['json'])
     
     # check for matching SRS for all assets...case insensitive
+    # the 'string' test is based on a simple string comparison. Given that you can define
+    # the same projection in multiple ways, the test is far from infallible!!
+    #
+    # the 'pyproj' test should be more robust because it creates a more standardized CRS
+    # from the json srs and then tests the new CRS descriptions.
     if all_must_match:
+        crs = pyproj.CRS.from_json(srs)
         for i in range(1, len(assets)):
             reader = pdal.Reader(assets[i])
             p = reader.pipeline()
             qi = p.quickinfo[reader.type]
             fsrs = json.dumps(qi['srs']['json'])
-            if fsrs.lower() != srs.lower():
-                raise Exception(f"srs for asset: {assets[i]} ({fsrs}) does not match srs for first asset: {assets[0]} ({srs})")
+            fcrs = pyproj.CRS.from_json(fsrs)
+
+            if testtype.lower() == 'string':
+                if srs.lower() != fsrs.lower():
+                    raise Exception(f"srs for asset: {assets[i]} ({fsrs}) does not match srs for first asset: {assets[0]} ({srs})")
+            else:
+                if not crs.is_exact_same(fcrs):
+                    raise Exception(f"srs for asset: {assets[i]} ({fsrs}) does not match srs for first asset: {assets[0]} ({srs})")
                 
     return srs
 

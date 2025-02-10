@@ -6,7 +6,9 @@ import pdal
 import json
 import datetime
 from shutil import rmtree
-from osgeo import gdal
+from osgeo import gdal, ogr
+import pyproj
+from osgeo.osr import SpatialReference
 
 import planetary_computer as pc
 
@@ -59,7 +61,7 @@ print(scan_asset_for_bounds("H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_Pluma
 b = scan_asset_for_bounds("H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2130n2145.copc.laz")
 print(f"file bounds: {b}")
 b.adjust_to_cell_lines(30)
-print(f"adjuste file bounds: {b}")
+print(f"adjusted file bounds: {b}")
  """
 
 """ 
@@ -78,3 +80,24 @@ for asset in assets:
     p.execute()
 
  """
+
+""" ogr.UseExceptions()
+srs = scan_for_srs(["H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2130n2145.copc.laz"])
+
+crs = pyproj.CRS.from_json(srs)
+crs.is_exact_same(crs2)
+wkt = crs.to_wkt()
+print(wkt)
+ """
+
+# test srs scanning and pyproj method
+data_folder = "H:/FUSIONTestData"                               # COPC tiles from MPC, not normalized but have class 2 points
+assets = [fn.as_posix() for fn in Path(data_folder).glob("*.copc.laz")]
+
+if len(assets) == 0:
+    raise Exception(f"No point assets found in {data_folder}\n")
+
+# get srs for point tiles...also check that all assets have same sts
+srs = scan_for_srs(assets, all_must_match = True, testtype='pyproj')
+
+print(srs)
