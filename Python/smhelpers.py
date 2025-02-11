@@ -12,7 +12,7 @@ import pdal
 import json
 import datetime
 from shutil import rmtree
-from osgeo import gdal
+from osgeo import gdal, osr
 import pyproj
 
 from silvimetric import Storage, Metric, Bounds, Pdal_Attributes
@@ -24,6 +24,72 @@ from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 ###############################################################################    
 ##########################  F U N C T I O N S  ################################
 ###############################################################################    
+import numpy
+from osgeo import osr
+
+# https://gis.stackexchange.com/questions/165020/how-to-calculate-the-bounding-box-in-projected-coordinates
+def transform_bounding_box(
+        bounding_box, base_epsg, new_epsg, edge_samples=11):
+    """Transform input bounding box to output projection.
+
+    This transform accounts for the fact that the reprojected square bounding
+    box might be warped in the new coordinate system.  To account for this,
+    the function samples points along the original bounding box edges and
+    attempts to make the largest bounding box around any transformed point
+    on the edge whether corners or warped edges.
+
+    Parameters:
+        bounding_box (list): a list of 4 coordinates in `base_epsg` coordinate
+            system describing the bound in the order [xmin, ymin, xmax, ymax]
+        base_epsg (int): the EPSG code of the input coordinate system
+        new_epsg (int): the EPSG code of the desired output coordinate system
+        edge_samples (int): the number of interpolated points along each
+            bounding box edge to sample along. A value of 2 will sample just
+            the corners while a value of 3 will also sample the corners and
+            the midpoint.
+
+    Returns:
+        A list of the form [xmin, ymin, xmax, ymax] that describes the largest
+        fitting bounding box around the original warped bounding box in
+        `new_epsg` coordinate system.
+    """
+    base_ref = osr.SpatialReference()
+    base_ref.ImportFromEPSG(base_epsg)
+
+    new_ref = osr.SpatialReference()
+    new_ref.ImportFromEPSG(new_epsg)
+
+    transformer = osr.CoordinateTransformation(base_ref, new_ref)
+
+    p_0 = np.array((bounding_box[0], bounding_box[3]))
+    p_1 = np.array((bounding_box[0], bounding_box[1]))
+    p_2 = np.array((bounding_box[2], bounding_box[1]))
+    p_3 = np.array((bounding_box[2], bounding_box[3]))
+
+    def _transform_point(point):
+        trans_x, trans_y, _ = (transformer.TransformPoint(*point))
+        return (trans_x, trans_y)
+
+    # This list comprehension iterates over each edge of the bounding box,
+    # divides each edge into `edge_samples` number of points, then reduces
+    # that list to an appropriate `bounding_fn` given the edge.
+    # For example the left edge needs to be the minimum x coordinate so
+    # we generate `edge_samples` number of points between the upper left and
+    # lower left point, transform them all to the new coordinate system
+    # then get the minimum x coordinate "min(p[0] ...)" of the batch.
+    transformed_bounding_box = [
+        bounding_fn(
+            [_transform_point(
+                p_a * v + p_b * (1 - v)) for v in np.linspace(
+                    0, 1, edge_samples)])
+        for p_a, p_b, bounding_fn in [
+            (p_0, p_1, lambda p_list: min([p[0] for p in p_list])),
+            (p_1, p_2, lambda p_list: min([p[1] for p in p_list])),
+            (p_2, p_3, lambda p_list: max([p[0] for p in p_list])),
+            (p_3, p_0, lambda p_list: max([p[1] for p in p_list]))]]
+    
+    return transformed_bounding_box
+
 ###### scan for srs ######
 # scan a list of assets for srs info. Optionally check that all assets
 # in list have same srs.
@@ -101,10 +167,11 @@ def scan_asset_for_bounds(asset: str) -> Bounds:
 # FUSION alignment will add a cell each time it is called.
 #
 # returns silvimetric.resources.bounds.Bounds object
-def scan_for_bounds(assets: list[str], resolution: float | int, adjust_alignment = False, alignment = 'pixelispoint') -> Bounds:
+def scan_for_bounds(assets: list[str], resolution: float | int = 0, adjust_alignment = False, alignment = 'pixelispoint') -> Bounds:
     """Use PDAL quickinfo to get overall bounding box for data in a list of assets.
 
     :raises Exception: List of assets is empty
+    :raises Exception: Resolution is invalid (<= 0) and adjust_alignment == True
 
     :return: Return SilviMetric Bounds object optionally, adjusted to cell lines
     """
@@ -113,8 +180,12 @@ def scan_for_bounds(assets: list[str], resolution: float | int, adjust_alignment
     if len(assets) == 0:
         raise Exception("List of assets is empty")
     
+    # check resolution
+    if adjust_alignment and resolution <= 0:
+        raise Exception(f"Invalid resolution: {resolution}")
+    
     # bogus bounds to start
-    bounds = Bounds(sys.float_info.max, sys.float_info.max, sys.float_info.min, sys.float_info.min)
+    bounds = Bounds(sys.float_info.max, sys.float_info.max, -sys.float_info.max, -sys.float_info.max)
 
     # use PDAL python bindings to get bounds for each tile and update overall bounds
     for asset in assets:

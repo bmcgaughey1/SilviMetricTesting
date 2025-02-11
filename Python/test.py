@@ -6,7 +6,7 @@ import pdal
 import json
 import datetime
 from shutil import rmtree
-from osgeo import gdal, ogr
+from osgeo import gdal, ogr, osr
 import pyproj
 from osgeo.osr import SpatialReference
 
@@ -17,7 +17,7 @@ from silvimetric import StorageConfig, ShatterConfig, ExtractConfig
 from silvimetric import scan, extract, shatter
 from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 
-from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds
+from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds, transform_bounding_box
 
 """ 
 # test working with list of planetary computer asset URLs
@@ -90,7 +90,7 @@ wkt = crs.to_wkt()
 print(wkt)
  """
 
-# test srs scanning and pyproj method
+""" # test srs scanning and pyproj method
 data_folder = "H:/FUSIONTestData"                               # COPC tiles from MPC, not normalized but have class 2 points
 assets = [fn.as_posix() for fn in Path(data_folder).glob("*.copc.laz")]
 
@@ -101,3 +101,22 @@ if len(assets) == 0:
 srs = scan_for_srs(assets, all_must_match = True, testtype='pyproj')
 
 print(srs)
+ """
+
+
+# testing for URL
+osr.UseExceptions()
+base = 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/stac/'
+assets = [
+    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6244000.copc.laz',
+    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6243000.copc.laz',
+    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6244000.copc.laz',
+    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6243000.copc.laz'
+    ]
+srs = scan_for_srs([assets[0]], all_must_match = True, testtype='pyproj')
+#print(srs)
+bnds = scan_for_bounds(assets)
+print(bnds)
+
+tbnds = transform_bounding_box([bnds.miny, bnds.minx, bnds.maxy, bnds.maxx], 6318, 26908)
+print(tbnds)
