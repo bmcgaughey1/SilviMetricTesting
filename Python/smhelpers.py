@@ -1,3 +1,6 @@
+# link for info regarding tile indexes in PDAL
+# https://pdal.io/en/latest/tutorial/tindex/index.html
+#
 ###############################################################################    
 ############## Helper functions for SilviMetric workflows #####################
 ###############################################################################    
@@ -33,13 +36,14 @@ def scan_for_srs(assets: list[str], all_must_match: bool = True, testtype: str =
     """Use PDAL quickinfo to get srs for first asset in list of assets. Optionally,
     check that all assets in list have same srs.
 
+    :raises Exception: List of assets is empty
     :raises Exception: srs for assets in list are different from srs for first asset
     
     :return: srs string in PROJJSON format
     """
 
     if len(assets) == 0:
-        return ""
+        raise Exception(f"list of assets is empty")
         
     # use PDAL python bindings to find the srs of our data...look at first asset
     reader = pdal.Reader(assets[0])
@@ -97,7 +101,7 @@ def scan_asset_for_bounds(asset: str) -> Bounds:
 # FUSION alignment will add a cell each time it is called.
 #
 # returns silvimetric.resources.bounds.Bounds object
-def scan_for_bounds(assets: list[str], resolution: float | int, adjust_to_cell_lines = False) -> Bounds:
+def scan_for_bounds(assets: list[str], resolution: float | int, adjust_alignment = False, alignment = 'pixelispoint') -> Bounds:
     """Use PDAL quickinfo to get overall bounding box for data in a list of assets.
 
     :raises Exception: List of assets is empty
@@ -106,7 +110,7 @@ def scan_for_bounds(assets: list[str], resolution: float | int, adjust_to_cell_l
     """
 
     # check for assets
-    if not len(assets):
+    if len(assets) == 0:
         raise Exception("List of assets is empty")
     
     # bogus bounds to start
@@ -126,8 +130,8 @@ def scan_for_bounds(assets: list[str], resolution: float | int, adjust_to_cell_l
         if fb.maxy > bounds.maxy:
             bounds.maxy = fb.maxy
 
-    if adjust_to_cell_lines:
-        bounds.adjust_to_cell_lines(resolution)
+    if adjust_alignment:
+        bounds.adjust_alignment(resolution, alignment)
         
     return bounds
 
@@ -143,7 +147,7 @@ def scan_for_bounds(assets: list[str], resolution: float | int, adjust_to_cell_l
 # be getting points cell by cell so ground points may be sparse or poorly
 # distributed.
 
-def build_pipeline(asset_filenme: str
+def build_pipeline(asset: str
                     , add_classes: list[int] = []
                     , skip_classes: list[int] = []
                     , skip_synthetic = True
@@ -162,7 +166,7 @@ def build_pipeline(asset_filenme: str
 
     :raises Exception: The same classes are included in add_classes and skip_classes
     :raises Exception: Invalid value for HAG_method. Valid choices: "delaunay", "nn", "dem", "vrt"..."dem" and "vrt" are equilvalent.
-    "dem" and "vrt" both expect a filename in ground_VRT that is either a single raster or a VRT name.
+    "dem" and "vrt" both expect a filename in ground_VRT that is either a single raster or a VRT file name.
 
     :return: Return PDAL pipline
     """
@@ -228,7 +232,7 @@ def build_pipeline(asset_filenme: str
         exp = "(" + exp + ")"
         
     # build point reader stage
-    stage = pdal.Reader(asset_filenme)
+    stage = pdal.Reader(asset)
 
     # override srs for points...
     if override_srs != "":

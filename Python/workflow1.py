@@ -95,7 +95,7 @@ if __name__ == "__main__":
     rmtree(db_dir, ignore_errors=True)
     make_metric()
     # db(bounds, resolution, srs, db_dir, 'pixelispoint')      # uses default set of metrics...broken as of 1/30/2025
-    db_metric_subset(bounds, resolution, srs, db_dir, 'pixelispoint')
+    db_metric_subset(bounds, resolution, srs, db_dir, alignment = 'pixelispoint')
 
     # walk through assets, scan and shatter
     for asset in assets:
