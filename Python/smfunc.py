@@ -50,7 +50,7 @@ def db_metric_CHM(bounds, resolution, srs, db_dir, alignment = 'pixelispoint'):
 
     metrics = [ sm_max ]
     st_config = StorageConfig(root=bounds, resolution=resolution, crs=srs,
-        attrs=attrs, metrics=metrics, tdb_dir=db_dir, alignment = alignmen)
+        attrs=attrs, metrics=metrics, tdb_dir=db_dir, alignment = alignment)
     storage = Storage.create(st_config)
 
 def db(bounds, resolution, srs, db_dir, alignment = 'pixelispoint'):
@@ -61,7 +61,7 @@ def db(bounds, resolution, srs, db_dir, alignment = 'pixelispoint'):
     ]
 
     st_config = StorageConfig(root=bounds, resolution=resolution, crs=srs,
-        attrs=attrs, tdb_dir=db_dir, alignment = alignmen)
+        attrs=attrs, tdb_dir=db_dir, alignment = alignment)
     storage = Storage.create(st_config)
 
 ####### Perform Scan #######

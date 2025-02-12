@@ -5,14 +5,16 @@
 
 **Testing uses the pixel_is_point branch from the [SilviMetric
 repo](https://github.com/hobuinc/silvimetric) (v1.3.1). This branch
-implements a change to the alignment of SilviMetric’s cell structure so
-it matchs the structure used by FUSION. In short, FUSION’s alignment is
-such that pixel centers fall on a multiple of the cell size. The main
-branch in the repo uses and alignment such that the cell edges fall on a
-multiple of the cell size.**
+implements two raster alignment methods that apply to the entire TileDB.
+The methods are: ‘PixelIsPoint’ and ‘PixelIsArea’ for a change. FUSION
+uses the ‘PixelIsPoint’ alignment so raster cell centers are aligned to
+a multiple of the cell size. The ‘PixelIsCell’ option aligns cell edges
+to a multiple of the cell size. The main branch in the repo uses and
+alignment such that the cell edges fall on a multiple of the cell
+size.**
 
-Ultimately, I think we want SilviMetric to offer both cell alignment
-options and store the alignment method in StorageConfig.
+The pixel_is_point branch will, ultimately, be merged into the main
+branch of SilviMetric.
 
 ## Example lidar data
 
@@ -41,6 +43,9 @@ Test workflows rely on data on a local computer (paths are hard coded).
 While this makes it nearly impossible for someone else to run the code
 as-is, it doesn’t negate the utility of the code to learn how to do
 simple processing.
+
+The testing code is very fluid so expect changes and additional
+workflows as testing proceeds.
 
 The basic workflow
 ([workflow1.py](https://github.com/bmcgaughey1/SilviMetricTesting/blob/24fba55ed3d666b5fc83bb925c61ef3f37c61a8e/Python/workflow1.py))
@@ -84,6 +89,11 @@ point cloud data (e.g. DAP data from NAIP imagery) will not have
 accompanying DEMs. For such data, we have relied on either lidar-derived
 DEMs (best case) or other DEM source with coarser resolutions (10+m).
 
+There is another workflow that produces a 1.5m resolution canopy height
+model (CHM) using SilviMetric. This is a capability that was not really
+part of SilviMetric’s scope but it does produce a useable product.
+Probably not the most efficient way to produce a CHM but useable.
+
 **SilviMetric crashed when using hag_delaunay to compute HAG so this
 method was not included in testing.**
 
@@ -96,6 +106,7 @@ useful to others wanting to apply SilviMetric to their data:
 - scan_for_srs()
 - build_pipeline()
 - write_pipeline()
+- transform_bounds()
 
 **Documentation for these functions will be added later…**
 
@@ -120,5 +131,18 @@ to PDF format. To review the comparison results, look at the PDF
 documents in the Rcode folder.
 
 ## Results
+
+I compared several metric outputs and found differences that are mostly
+related to the method used to construct the DEM used to compute HAG.
+When running SilviMetric using point data normalized by FUSION,
+differences are very small and I think the differences are due to the
+set of points used for the cells. FUSION omits points on the right and
+top edges of cells but SilviMetric (PDAL) includes these points.
+
+I also compared a 1.5m CHM built in a separate run of SilviMetric using
+all points with HAG \>= 0.0. This comparison is a little wonky because
+FUSION fills “holes” in the CHM using bilinear interpolation and
+SilviMetric does not (this would best be a post-processing step using
+the SilviMetric CHM). This behavior can be controlled in FUSION.
 
 [results](https://github.com/bmcgaughey1/SilviMetricTesting/blob/f2fe47e20f8910a1aeb0b393639841acf73b431c/Rcode/MetricComparison.pdf)

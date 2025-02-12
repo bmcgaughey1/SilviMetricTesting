@@ -27,7 +27,6 @@ from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 import numpy
 from osgeo import osr
 
-# https://gis.stackexchange.com/questions/165020/how-to-calculate-the-bounding-box-in-projected-coordinates
 def __transform_bounding_box(
         bounding_box, in_sr, out_sr, edge_samples=11):
     """Transform input bounding box to output projection.
@@ -53,8 +52,26 @@ def __transform_bounding_box(
         fitting bounding box around the original warped bounding box in
         `out_sr` coordinate system.
     """
-    transformer = osr.CoordinateTransformation(in_sr, out_sr)
+    osr.UseExceptions()
 
+    transformer = osr.CoordinateTransformation(in_sr, out_sr)
+    transformed_bounding_box = list()
+
+    # try to deal with lat-lon and lon-lat
+    if in_sr.IsGeographic():
+        if in_sr.GetAxisMappingStrategy() == 1:
+            transformed_bounding_box = list(transformer.TransformBounds(bounding_box[1], bounding_box[0], bounding_box[3], bounding_box[2], edge_samples))
+        else:
+            transformed_bounding_box = list(transformer.TransformBounds(bounding_box[0], bounding_box[1], bounding_box[2], bounding_box[3], edge_samples))
+    else:
+        transformed_bounding_box = list(transformer.TransformBounds(bounding_box[0], bounding_box[1], bounding_box[2], bounding_box[3], edge_samples))
+
+    """     
+    # originally had code to sample along edges and transform samples...
+    # then discovered CoordinateTransforation.TransformBounds
+    #
+    # code and link below was from before the TransformBounds capability was added to python interface
+    # https://gis.stackexchange.com/questions/165020/how-to-calculate-the-bounding-box-in-projected-coordinates
     p_0 = np.array((bounding_box[0], bounding_box[3]))
     p_1 = np.array((bounding_box[0], bounding_box[1]))
     p_2 = np.array((bounding_box[2], bounding_box[1]))
@@ -94,6 +111,7 @@ def __transform_bounding_box(
             (p_2, p_3, lambda p_list: max([p[0] for p in p_list])),
             (p_3, p_0, lambda p_list: max([p[1] for p in p_list]))]]
     
+    """ 
     return transformed_bounding_box
 
 ###### transform Bounds object ######
@@ -116,11 +134,15 @@ def transform_bounds(b: Bounds, in_srs: str, out_srs: str, edge_samples = 11) ->
             the corners while a value of 3 will also sample the corners and
             the midpoint.
 
+    :raises Exception: Transformed bounding box is invalid.
+
     Returns:
         A SilviMetric Bounds object that describes the largest
         fitting bounding box around the original warped bounding box in
         `out_srs` coordinate system.
     """
+
+    osr.UseExceptions()
 
     # create SpatialReference for in_srs and out_srs
     #
@@ -134,8 +156,11 @@ def transform_bounds(b: Bounds, in_srs: str, out_srs: str, edge_samples = 11) ->
     out_sr = osr.SpatialReference(ppcrs.to_wkt())
 
     # transform bounding box
-    bb = __transform_bounding_box([b.minx, b.miny, b.maxx, b.maxy], in_sr, out_sr, edge_samples)
+    bb = __transform_bounding_box([b.minx, b.miny, b.maxx, b.maxy], in_sr, out_sr)
 
+    if len(bb) == 0
+        raise Exception("Transformed bounding box is invalid...check input and output srs")
+    
     # build Bounds object to return
     tb = Bounds(bb[0], bb[1], bb[2], bb[3])
         
@@ -380,7 +405,7 @@ def build_pipeline(asset: str
     
     # do projection after HAG so we can use source DEM VRT
     if out_srs != "":
-        p |= pdal.Filter.reprojection(out_srs = f"{out_srs}")
+        p |= pdal.Filter.reprojection(out_srs = f"{out_srs}", in_srs = f"{override_srs}")
 
     # replace Z with HAG
     if HAG_method != None and HAG_replaces_Z:

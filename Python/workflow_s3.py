@@ -44,7 +44,7 @@ if __name__ == "__main__":
     ########## Paths ##########
     curpath = Path(os.path.dirname(os.path.realpath(__file__)))     # folder containing this python file
 
-    data_folder = "H:/FUSIONTestData"                               # COPC tiles from MPC, not normalized but have class 2 points
+    data_folder = "H:/NOAATestData"                               # COPC tiles from MPC, not normalized but have class 2 points
     db_dir_path = Path(curpath  / f"../TestOutput/{project_name}_{HAG_method}.tdb")
     db_dir = db_dir_path.as_posix()
     out_dir = (curpath / f"../TestOutput/{project_name}_{HAG_method}_tifs").as_posix()
@@ -53,13 +53,19 @@ if __name__ == "__main__":
     ground_VRT_filename = "../TestOutput/__grnd__.vrt"
     
     ########## Collect and prepare assets: point tiles and DEM tiles ##########
+    # get list of COPC assets in data folder...could also be a list of URLs
+    assets = [fn.as_posix() for fn in Path(data_folder).glob("*.copc.laz")]
+
+    if len(assets) == 0:
+        raise Exception(f"No point assets found in {data_folder}\n")
+
     # list of COPC assets from NOAA...lat-lon
-    assets = [
-    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6244000.copc.laz',
-    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6243000.copc.laz',
-    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6244000.copc.laz',
-    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6243000.copc.laz'
-    ]
+    # assets = [
+    # 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6244000.copc.laz',
+    # 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6243000.copc.laz',
+    # 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6244000.copc.laz',
+    # 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6243000.copc.laz'
+    # ]
 
     # get srs for point tiles...also check that all assets have same srs
     srs = scan_for_srs(assets, all_must_match = True)
@@ -78,19 +84,20 @@ if __name__ == "__main__":
 
     # transform the bounding box
     bounds = transform_bounds(tbounds, srs, out_srs)
+    print(f"UTM 8N bounds: {bounds}")
 
     ######### create db #########
     # delete existing database, add metrics and create database
     rmtree(db_dir, ignore_errors=True)
     make_metric()
-    # db(bounds, resolution, srs, db_dir, 'pixelispoint')      # uses default set of metrics...broken as of 1/30/2025
-    db_metric_subset(bounds, resolution, srs, db_dir, alignment = 'pixelispoint')
+    # db(bounds, resolution, out_srs, db_dir, 'pixelispoint')      # uses default set of metrics...broken as of 1/30/2025
+    db_metric_subset(bounds, resolution, out_srs, db_dir, alignment = 'pixelispoint')
 
     # walk through assets, scan and shatter
     for asset in assets:
         # print(f"Processing asset: {asset}\n")
         if HAG_method.lower() == "delaunay":
-            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True, out_srs='EPSG:26908')
+            p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "delaunay", min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True, out_srs='EPSG:26908', override_srs=srs)
         if HAG_method.lower() == "nn":
             p = build_pipeline(asset, skip_classes = [7,9,18], skip_overlap = False, HAG_method = "nn", min_HAG = min_HAG, max_HAG = max_HAG, HAG_replaces_Z = True, out_srs='EPSG:26908')
 
@@ -102,11 +109,12 @@ if __name__ == "__main__":
         fb = transform_bounds(tfb, srs, out_srs)
 
         # scan
-        scan_info = sc(fb, pipeline_filename, db_dir)
+        #scan_info = sc(fb, pipeline_filename, db_dir)
         
-        # use recommended tile size
+        # set tile size
         #tile_size = int(scan_info['tile_info']['recommended'])
-        tile_size = int(scan_info['tile_info']['mean'])
+        #tile_size = int(scan_info['tile_info']['mean'])
+        tile_size = 18
         
         # shatter
         sh(fb, tile_size, pipeline_filename, db_dir)
