@@ -6,7 +6,7 @@ import pdal
 import json
 import datetime
 from shutil import rmtree
-from osgeo import gdal
+from osgeo import gdal, osr
 
 from silvimetric import Storage, Metric, Bounds, Pdal_Attributes
 from silvimetric import StorageConfig, ShatterConfig, ExtractConfig
@@ -14,7 +14,7 @@ from silvimetric import scan, extract, shatter
 from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 # from silvimetric.resources.metrics.__init__ import grid_metrics
 
-from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds, transform_bounding_box
+from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds, transform_bounds
 from smfunc import make_metric, db_metric_subset, db, sc, sh, ex
 
 ###############################################################################    
@@ -71,9 +71,13 @@ if __name__ == "__main__":
     # get overall bounding box for point data and adjust to cell lines
     tbounds = scan_for_bounds(assets, resolution)
 
-    # the bound is in EPSG:6318 lon-lat NAD83(2011) but we want our metrics in some projection
-    # project the bounding box
-    bounds = transform_bounding_box(tbounds, 6318, 26908)
+    # the bound is in EPSG:6318 lon-lat NAD83(2011) but we want our metrics in some projection UTM zone 8
+    out_srs = osr.SpatialReference()
+    out_srs.ImportFromEPSG(26908)
+    out_srs = out_srs.ExportToPROJJSON()
+
+    # transform the bounding box
+    bounds = transform_bounds(tbounds, srs, out_srs)
 
     ######### create db #########
     # delete existing database, add metrics and create database
@@ -94,8 +98,9 @@ if __name__ == "__main__":
         write_pipeline(p, pipeline_filename)
 
         # get bounds for individual asset
-        fb = scan_asset_for_bounds(asset)
-        
+        tfb = scan_asset_for_bounds(asset)
+        fb = transform_bounds(tfb, srs, out_srs)
+
         # scan
         scan_info = sc(fb, pipeline_filename, db_dir)
         

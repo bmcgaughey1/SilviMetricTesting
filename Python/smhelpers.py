@@ -28,8 +28,8 @@ import numpy
 from osgeo import osr
 
 # https://gis.stackexchange.com/questions/165020/how-to-calculate-the-bounding-box-in-projected-coordinates
-def transform_bounding_box(
-        bounding_box, base_epsg, new_epsg, edge_samples=11):
+def __transform_bounding_box(
+        bounding_box, in_sr, out_sr, edge_samples=11):
     """Transform input bounding box to output projection.
 
     This transform accounts for the fact that the reprojected square bounding
@@ -39,10 +39,10 @@ def transform_bounding_box(
     on the edge whether corners or warped edges.
 
     Parameters:
-        bounding_box (list): a list of 4 coordinates in `base_epsg` coordinate
+        bounding_box (list): a list of 4 coordinates in `in_sr` coordinate
             system describing the bound in the order [xmin, ymin, xmax, ymax]
-        base_epsg (int): the EPSG code of the input coordinate system
-        new_epsg (int): the EPSG code of the desired output coordinate system
+        in_sr (int): SpatialReference for input bounding box
+        out_sr (int): SpatialReference for output bounding box
         edge_samples (int): the number of interpolated points along each
             bounding box edge to sample along. A value of 2 will sample just
             the corners while a value of 3 will also sample the corners and
@@ -51,20 +51,26 @@ def transform_bounding_box(
     Returns:
         A list of the form [xmin, ymin, xmax, ymax] that describes the largest
         fitting bounding box around the original warped bounding box in
-        `new_epsg` coordinate system.
+        `out_sr` coordinate system.
     """
-    base_ref = osr.SpatialReference()
-    base_ref.ImportFromEPSG(base_epsg)
-
-    new_ref = osr.SpatialReference()
-    new_ref.ImportFromEPSG(new_epsg)
-
-    transformer = osr.CoordinateTransformation(base_ref, new_ref)
+    transformer = osr.CoordinateTransformation(in_sr, out_sr)
 
     p_0 = np.array((bounding_box[0], bounding_box[3]))
     p_1 = np.array((bounding_box[0], bounding_box[1]))
     p_2 = np.array((bounding_box[2], bounding_box[1]))
     p_3 = np.array((bounding_box[2], bounding_box[3]))
+
+    # if geographic coordinate system, check axis order to 
+    # see if we need to flip X and Y.
+    #
+    # Not sure if this strategy will work but don't know enough to
+    # come up with a better strategy.
+    if in_sr.IsGeographic():
+        if in_sr.GetAxisMappingStrategy() == 1:
+            p_0 = np.array((bounding_box[3], bounding_box[0]))
+            p_1 = np.array((bounding_box[1], bounding_box[0]))
+            p_2 = np.array((bounding_box[1], bounding_box[2]))
+            p_3 = np.array((bounding_box[3], bounding_box[2]))
 
     def _transform_point(point):
         trans_x, trans_y, _ = (transformer.TransformPoint(*point))
@@ -90,6 +96,51 @@ def transform_bounding_box(
     
     return transformed_bounding_box
 
+###### transform Bounds object ######
+def transform_bounds(b: Bounds, in_srs: str, out_srs: str, edge_samples = 11) -> Bounds:
+    """Transform SilviMetric Bounds object from in_srs to out_srs.
+    
+    This transform accounts for the fact that the reprojected square bounding
+    box might be warped in the new coordinate system.  To account for this,
+    the function samples points along the original bounding box edges and
+    attempts to make the largest bounding box around any transformed point
+    on the edge whether corners or warped edges.
+
+    Parameters:
+        b (Bounds): a SilviMetric Bounds object in `in_srs` coordinate
+            system describing the bounding box
+        in_srs (str): srs of the input coordinate system (PROJJSON format)
+        out_srs (str): srs of the desired output coordinate system  (PROJJSON format)
+        edge_samples (int): the number of interpolated points along each
+            bounding box edge to sample along. A value of 2 will sample just
+            the corners while a value of 3 will also sample the corners and
+            the midpoint.
+
+    Returns:
+        A SilviMetric Bounds object that describes the largest
+        fitting bounding box around the original warped bounding box in
+        `out_srs` coordinate system.
+    """
+
+    # create SpatialReference for in_srs and out_srs
+    #
+    # example code for doing transform in pyproj
+    # https://pyproj4.github.io/pyproj/stable/api/transformer.html
+    ppcrs = pyproj.CRS.from_json(in_srs)
+    in_sr = osr.SpatialReference(ppcrs.to_wkt())
+
+    # get EPSG for out_srs
+    ppcrs = pyproj.CRS.from_json(out_srs)
+    out_sr = osr.SpatialReference(ppcrs.to_wkt())
+
+    # transform bounding box
+    bb = __transform_bounding_box([b.minx, b.miny, b.maxx, b.maxy], in_sr, out_sr, edge_samples)
+
+    # build Bounds object to return
+    tb = Bounds(bb[0], bb[1], bb[2], bb[3])
+        
+    return tb
+    
 ###### scan for srs ######
 # scan a list of assets for srs info. Optionally check that all assets
 # in list have same srs.

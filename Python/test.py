@@ -17,7 +17,7 @@ from silvimetric import StorageConfig, ShatterConfig, ExtractConfig
 from silvimetric import scan, extract, shatter
 from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 
-from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds, transform_bounding_box
+from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds, transform_bounds
 
 """ 
 # test working with list of planetary computer asset URLs
@@ -118,5 +118,18 @@ srs = scan_for_srs([assets[0]], all_must_match = True, testtype='pyproj')
 bnds = scan_for_bounds(assets)
 print(bnds)
 
-tbnds = transform_bounding_box([bnds.miny, bnds.minx, bnds.maxy, bnds.maxx], 6318, 26908)
+crs = pyproj.CRS.from_json(srs)
+in_sr = osr.SpatialReference(crs.to_wkt())
+print(in_sr.IsGeographic())
+print(in_sr.GetAxisMappingStrategy())
+
+out_srs =  osr.SpatialReference()
+out_srs.ImportFromEPSG(26908)
+print(out_srs.IsGeographic())
+print(out_srs.GetAxisMappingStrategy())
+
+
+out_srs =  osr.SpatialReference()
+out_srs.ImportFromEPSG(26908)
+tbnds = transform_bounds(bnds, srs, out_srs.ExportToPROJJSON())
 print(tbnds)
