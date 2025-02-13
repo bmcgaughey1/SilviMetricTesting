@@ -114,12 +114,16 @@ assets = [
     #'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6243000.copc.laz'
     ]
 srs = scan_for_srs(assets, all_must_match = True, testtype='pyproj')
-print(srs)
+#print(srs)
 bnds = scan_for_bounds(assets)
-print(bnds)
+#print(bnds)
 
 crs = pyproj.CRS.from_json(srs)
 in_sr = osr.SpatialReference(crs.to_wkt())
+print(in_sr)
+print(in_sr.GetAxisName('GEOGCS', 0))
+print(in_sr.GetAxisName('GEOGCS', 1))
+#in_sr = osr.SpatialReference(crs.to_wkt())
 #print(in_sr.IsGeographic())
 #print(in_sr.GetAxisMappingStrategy())
 

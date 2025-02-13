@@ -24,98 +24,8 @@ from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 ###############################################################################    
 ##########################  F U N C T I O N S  ################################
 ###############################################################################    
-import numpy
-from osgeo import osr
-
-def __transform_bounding_box(
-        bounding_box, in_sr, out_sr, edge_samples=11):
-    """Transform input bounding box to output projection.
-
-    This transform accounts for the fact that the reprojected square bounding
-    box might be warped in the new coordinate system.  To account for this,
-    the function samples points along the original bounding box edges and
-    attempts to make the largest bounding box around any transformed point
-    on the edge whether corners or warped edges.
-
-    Parameters:
-        bounding_box (list): a list of 4 coordinates in `in_sr` coordinate
-            system describing the bound in the order [xmin, ymin, xmax, ymax]
-        in_sr (int): SpatialReference for input bounding box
-        out_sr (int): SpatialReference for output bounding box
-        edge_samples (int): the number of interpolated points along each
-            bounding box edge to sample along. A value of 2 will sample just
-            the corners while a value of 3 will also sample the corners and
-            the midpoint.
-
-    Returns:
-        A list of the form [xmin, ymin, xmax, ymax] that describes the largest
-        fitting bounding box around the original warped bounding box in
-        `out_sr` coordinate system.
-    """
-    osr.UseExceptions()
-
-    transformer = osr.CoordinateTransformation(in_sr, out_sr)
-    transformed_bounding_box = list()
-
-    # try to deal with lat-lon and lon-lat
-    if in_sr.IsGeographic():
-        if in_sr.GetAxisMappingStrategy() == 1:
-            transformed_bounding_box = list(transformer.TransformBounds(bounding_box[1], bounding_box[0], bounding_box[3], bounding_box[2], edge_samples))
-        else:
-            transformed_bounding_box = list(transformer.TransformBounds(bounding_box[0], bounding_box[1], bounding_box[2], bounding_box[3], edge_samples))
-    else:
-        transformed_bounding_box = list(transformer.TransformBounds(bounding_box[0], bounding_box[1], bounding_box[2], bounding_box[3], edge_samples))
-
-    """     
-    # originally had code to sample along edges and transform samples...
-    # then discovered CoordinateTransforation.TransformBounds
-    #
-    # code and link below was from before the TransformBounds capability was added to python interface
-    # https://gis.stackexchange.com/questions/165020/how-to-calculate-the-bounding-box-in-projected-coordinates
-    p_0 = np.array((bounding_box[0], bounding_box[3]))
-    p_1 = np.array((bounding_box[0], bounding_box[1]))
-    p_2 = np.array((bounding_box[2], bounding_box[1]))
-    p_3 = np.array((bounding_box[2], bounding_box[3]))
-
-    # if geographic coordinate system, check axis order to 
-    # see if we need to flip X and Y.
-    #
-    # Not sure if this strategy will work but don't know enough to
-    # come up with a better strategy.
-    if in_sr.IsGeographic():
-        if in_sr.GetAxisMappingStrategy() == 1:
-            p_0 = np.array((bounding_box[3], bounding_box[0]))
-            p_1 = np.array((bounding_box[1], bounding_box[0]))
-            p_2 = np.array((bounding_box[1], bounding_box[2]))
-            p_3 = np.array((bounding_box[3], bounding_box[2]))
-
-    def _transform_point(point):
-        trans_x, trans_y, _ = (transformer.TransformPoint(*point))
-        return (trans_x, trans_y)
-
-    # This list comprehension iterates over each edge of the bounding box,
-    # divides each edge into `edge_samples` number of points, then reduces
-    # that list to an appropriate `bounding_fn` given the edge.
-    # For example the left edge needs to be the minimum x coordinate so
-    # we generate `edge_samples` number of points between the upper left and
-    # lower left point, transform them all to the new coordinate system
-    # then get the minimum x coordinate "min(p[0] ...)" of the batch.
-    transformed_bounding_box = [
-        bounding_fn(
-            [_transform_point(
-                p_a * v + p_b * (1 - v)) for v in np.linspace(
-                    0, 1, edge_samples)])
-        for p_a, p_b, bounding_fn in [
-            (p_0, p_1, lambda p_list: min([p[0] for p in p_list])),
-            (p_1, p_2, lambda p_list: min([p[1] for p in p_list])),
-            (p_2, p_3, lambda p_list: max([p[0] for p in p_list])),
-            (p_3, p_0, lambda p_list: max([p[1] for p in p_list]))]]
-    
-    """ 
-    return transformed_bounding_box
-
 ###### transform Bounds object ######
-def transform_bounds(b: Bounds, in_srs: str, out_srs: str, edge_samples = 11) -> Bounds:
+def transform_bounds(b: Bounds, in_srs: str, out_srs: str, edge_samples: int = 11) -> Bounds:
     """Transform SilviMetric Bounds object from in_srs to out_srs.
     
     This transform accounts for the fact that the reprojected square bounding
@@ -134,6 +44,8 @@ def transform_bounds(b: Bounds, in_srs: str, out_srs: str, edge_samples = 11) ->
             the corners while a value of 3 will also sample the corners and
             the midpoint.
 
+    :raises Exception: Can't create CoordinateTransformation using 'in_srs' and 'out_srs'
+    :raises Exception: TransformBounds fails
     :raises Exception: Transformed bounding box is invalid.
 
     Returns:
@@ -141,10 +53,11 @@ def transform_bounds(b: Bounds, in_srs: str, out_srs: str, edge_samples = 11) ->
         fitting bounding box around the original warped bounding box in
         `out_srs` coordinate system.
     """
-
     osr.UseExceptions()
 
     # create SpatialReference for in_srs and out_srs
+    # This is awkward since I am only using pyproj to read the PROJJSON srs
+    # and convert to WKT for SpatialReference
     #
     # example code for doing transform in pyproj
     # https://pyproj4.github.io/pyproj/stable/api/transformer.html
@@ -155,10 +68,27 @@ def transform_bounds(b: Bounds, in_srs: str, out_srs: str, edge_samples = 11) ->
     ppcrs = pyproj.CRS.from_json(out_srs)
     out_sr = osr.SpatialReference(ppcrs.to_wkt())
 
-    # transform bounding box
-    bb = __transform_bounding_box([b.minx, b.miny, b.maxx, b.maxy], in_sr, out_sr)
+    # build transformer
+    try:
+        transformer = osr.CoordinateTransformation(in_sr, out_sr)
+    except:
+        raise Exception(f"Could not create CoordinateTransformation using \nin_srs:\n{in_srs} and \nout_srs:\n{out_srs}")
+    
+    bb = list()
 
-    if len(bb) == 0
+    # transform bounding box and try to deal with lat-lon and lon-lat
+    try:
+        if in_sr.IsGeographic():
+            if in_sr.GetAxisMappingStrategy() == 1:
+                bb = list(transformer.TransformBounds(b.miny, b.minx, b.maxy, b.maxx, edge_samples))
+            else:
+                bb = list(transformer.TransformBounds(b.minx, b.miny, b.maxx, b.maxy, edge_samples))
+        else:
+            bb = list(transformer.TransformBounds(b.minx, b.miny, b.maxx, b.maxy, edge_samples))
+    except:
+        raise Exception("Could not transform bounding box")
+    
+    if len(bb) == 0:
         raise Exception("Transformed bounding box is invalid...check input and output srs")
     
     # build Bounds object to return
