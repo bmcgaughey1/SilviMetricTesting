@@ -79,7 +79,7 @@ def transform_bounds(b: Bounds, in_srs: str, out_srs: str, edge_samples: int = 1
     # transform bounding box and try to deal with lat-lon and lon-lat
     try:
         if in_sr.IsGeographic():
-            if in_sr.GetAxisMappingStrategy() == 1:
+            if in_sr.GetAxisName('GEOGCS', 0).lower() == 'latitude':
                 bb = list(transformer.TransformBounds(b.miny, b.minx, b.maxy, b.maxx, edge_samples))
             else:
                 bb = list(transformer.TransformBounds(b.minx, b.miny, b.maxx, b.maxy, edge_samples))

@@ -19,6 +19,14 @@ from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 
 from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds, transform_bounds
 
+###### check for command line argument to run specific test ######
+def testnum() -> int:
+    # check for command line args
+    if len(sys.argv) > 1:
+        return int(sys.argv[1])
+    
+    return 0
+
 """ 
 # test working with list of planetary computer asset URLs
 f = open("H:/FUSIONTestData/MPCTileURLs.txt", 'r')
@@ -103,59 +111,94 @@ srs = scan_for_srs(assets, all_must_match = True, testtype='pyproj')
 print(srs)
  """
 
+if testnum() == 1 or testnum() == 0:
+    # testing for URL
+    osr.UseExceptions()
+    base = 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/stac/'
+    assets = [
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6244000.copc.laz',
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6243000.copc.laz'
+        #'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6244000.copc.laz',
+        #'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6243000.copc.laz'
+        ]
+    srs = scan_for_srs(assets, all_must_match = True, testtype='pyproj')
+    #print(srs)
+    bnds = scan_for_bounds(assets)
+    #print(bnds)
 
-# testing for URL
-osr.UseExceptions()
-base = 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/stac/'
-assets = [
-    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6244000.copc.laz',
-    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6243000.copc.laz'
-    #'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6244000.copc.laz',
-    #'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6243000.copc.laz'
-    ]
-srs = scan_for_srs(assets, all_must_match = True, testtype='pyproj')
-#print(srs)
-bnds = scan_for_bounds(assets)
-#print(bnds)
+    crs = pyproj.CRS.from_json(srs)
+    in_sr = osr.SpatialReference(crs.to_wkt())
+    print(in_sr)
+    print(in_sr.GetAxisName('GEOGCS', 0))
+    print(in_sr.GetAxisName('GEOGCS', 1))
+    #in_sr = osr.SpatialReference(crs.to_wkt())
+    #print(in_sr.IsGeographic())
+    #print(in_sr.GetAxisMappingStrategy())
 
-crs = pyproj.CRS.from_json(srs)
-in_sr = osr.SpatialReference(crs.to_wkt())
-print(in_sr)
-print(in_sr.GetAxisName('GEOGCS', 0))
-print(in_sr.GetAxisName('GEOGCS', 1))
-#in_sr = osr.SpatialReference(crs.to_wkt())
-#print(in_sr.IsGeographic())
-#print(in_sr.GetAxisMappingStrategy())
-
-out_srs =  osr.SpatialReference()
-out_srs.ImportFromEPSG(26908)
-#print(out_srs.IsGeographic())
-#print(out_srs.GetAxisMappingStrategy())
+    out_srs =  osr.SpatialReference()
+    out_srs.ImportFromEPSG(26908)
+    print(out_srs)
+    print(out_srs.GetAxisName('PROJCS', 0))
+    print(out_srs.GetAxisName('PROJCS', 1))
+    #print(out_srs.IsGeographic())
+    #print(out_srs.GetAxisMappingStrategy())
 
 
-out_srs =  osr.SpatialReference()
-out_srs.ImportFromEPSG(26908)
-osrs = out_srs.ExportToPROJJSON()
-tbnds = transform_bounds(bnds, srs, osrs)
-print(tbnds)
+    out_srs =  osr.SpatialReference()
+    out_srs.ImportFromEPSG(26908)
+    osrs = out_srs.ExportToPROJJSON()
+    tbnds = transform_bounds(bnds, srs, osrs)
+    print(tbnds)
+    print(tbnds.to_json())
 
-"""
-osr.UseExceptions()
-base = 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/stac/'
-assets = [
-    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6244000.copc.laz',
-    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6243000.copc.laz'
-    #'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6244000.copc.laz',
-    #'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6243000.copc.laz'
-    ]
-srs = scan_for_srs(assets, all_must_match = True, testtype='pyproj')
-print(f"JSON: {srs}\n")
+if testnum() == 2 or testnum() == 0:
+    osr.UseExceptions()
+    base = 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/stac/'
+    assets = [
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6244000.copc.laz',
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6243000.copc.laz',
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6244000.copc.laz',
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6243000.copc.laz'
+        ]
+    srs = scan_for_srs(assets, all_must_match = True, testtype='pyproj')
+    print(f"JSON: {srs}\n")
 
-ppcrs = pyproj.CRS.from_json(srs)
-print(f"WKT: {ppcrs.to_wkt(output_axis_rule=False)}\n")
-print(f"WKT(axis): {ppcrs.to_wkt(output_axis_rule=True)}\n")
+    ppcrs = pyproj.CRS.from_json(srs)
+    print(f"WKT: {ppcrs.to_wkt(output_axis_rule=False)}\n")
+    print(f"WKT(axis): {ppcrs.to_wkt(output_axis_rule=True)}\n")
 
-ppcrs = pyproj.CRS.from_epsg(26908)
-print(f"WKT: {ppcrs.to_wkt(output_axis_rule=False)}\n")
-print(f"WKT(axis): {ppcrs.to_wkt(output_axis_rule=True)}\n")
-"""
+    ppcrs = pyproj.CRS.from_epsg(26908)
+    print(f"WKT: {ppcrs.to_wkt(output_axis_rule=False)}\n")
+    print(f"WKT(axis): {ppcrs.to_wkt(output_axis_rule=True)}\n")
+
+if testnum() == 3 or testnum() == 0:
+    assets = [
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6244000.copc.laz',
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6243000.copc.laz'
+        #'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6244000.copc.laz',
+        #'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6243000.copc.laz'
+        ]
+    srs = scan_for_srs(assets, all_must_match = True, testtype='pyproj')
+    #print(srs)
+    bnds = scan_for_bounds(assets)
+
+    # proper JSON formatting for Bounds object with CRS
+    bb = json.dumps({
+            "minx": bnds.minx, 
+            "miny": bnds.miny, 
+            "maxx": bnds.maxx, 
+            "maxy": bnds.maxy,
+            "crs": pyproj.CRS.from_json(srs).to_wkt()
+        }, 
+        indent = 4,
+        sort_keys = False)
+    print(bb)
+
+    file = open("../TestOutput/bounds.json", "w")
+
+    # Write data to the file
+    file.write(bb)
+
+    # Close the file
+    file.close()
+
