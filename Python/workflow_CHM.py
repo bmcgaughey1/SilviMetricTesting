@@ -43,7 +43,7 @@ if __name__ == "__main__":
     # Ground models for the area were derived from class 2 points in a FUSION run.
 
     ########## Setup #############
-    project_name = "Plumas_CHM"
+    project_name = "Plumas_CHM_pic"
     resolution = 1.5
     use_normalized_point_data = False        # True: data already has HAG computed by FUSION, False: data has elevation
     HAG_method = "vrt"                       # choices: "vrt", "delaunay", "nn"
@@ -81,12 +81,13 @@ if __name__ == "__main__":
         raise Exception(f"No point assets found in {data_folder}\n")
 
     # get srs for point tiles...also check that all assets have same srs
-    srs = scan_for_srs(assets, all_must_match = True)
+    # get srs for point tiles...also check that all assets have same srs
+    # Throws exception if first asset doesn't have srs or srs for assets don't match
+    try:
+        srs = scan_for_srs(assets, all_must_match = True)
+    except:
+        raise Exception("Problem with srs in assets")
        
-    if srs == "":
-        print(f"Missing or mismatched srs in assets\n")
-        quit()
-        
     # get list of ground files
     ground_assets = [fn.as_posix() for fn in Path(ground_folder).glob("*.img")]
     
@@ -98,13 +99,13 @@ if __name__ == "__main__":
     gvrt = gdal.BuildVRT(ground_VRT_filename, ground_assets)
     
     ######### create db #########
-    # get overall bounding box for point data and adjust to cell lines
+    # get overall bounding box for point data
     bounds = scan_for_bounds(assets, resolution)
 
     # delete existing database, add metrics and create database
     # db_metric_CHM() only includes the Z dimension (HAG in this case) and maximum value metric
     rmtree(db_dir, ignore_errors=True)
-    db_metric_CHM(bounds, resolution, srs, db_dir, alignment = 'pixelispoint')
+    db_metric_CHM(bounds, resolution, srs, db_dir, alignment = 'pixeliscell')
 
     ########## walk through assets, scan and shatter ##########
     for asset in assets:

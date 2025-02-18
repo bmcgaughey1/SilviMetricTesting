@@ -163,6 +163,10 @@ if testnum() == 2 or testnum() == 0:
     srs = scan_for_srs(assets, all_must_match = True, testtype='pyproj')
     print(f"JSON: {srs}\n")
 
+    ppsrs = pyproj.CRS.from_json(srs)
+    print(f"WKT: {ppcrs.to_wkt(output_axis_rule=False)}\n")
+    print(f"WKT(axis): {ppcrs.to_wkt(output_axis_rule=True)}\n")
+
     ppcrs = pyproj.CRS.from_json(srs)
     print(f"WKT: {ppcrs.to_wkt(output_axis_rule=False)}\n")
     print(f"WKT(axis): {ppcrs.to_wkt(output_axis_rule=True)}\n")
@@ -182,13 +186,16 @@ if testnum() == 3 or testnum() == 0:
     #print(srs)
     bnds = scan_for_bounds(assets)
 
+    crs = pyproj.CRS.from_json(srs)
+
     # proper JSON formatting for Bounds object with CRS
     bb = json.dumps({
             "minx": bnds.minx, 
             "miny": bnds.miny, 
             "maxx": bnds.maxx, 
             "maxy": bnds.maxy,
-            "crs": pyproj.CRS.from_json(srs).to_wkt()
+            "crs": crs.to_wkt()
+            # "crs": pyproj.CRS.from_json(srs).to_wkt()
         }, 
         indent = 4,
         sort_keys = False)
@@ -201,4 +208,21 @@ if testnum() == 3 or testnum() == 0:
 
     # Close the file
     file.close()
+
+if testnum() == 4:      # only run if asked
+    # reproject NOAA data for Wrangell Island, AK from geographic to UTM zone 7
+    inFolder = "H:/NOAATestData"
+    outFolder = "H:/NOAATestData/UTM7"
+    # get list of COPC assets in data folder...could also be a list of URLs
+    assets = [fn.as_posix() for fn in Path(inFolder).glob("*.copc.laz")]
+
+    for asset in assets:
+        # build pipeline
+        print(f"{asset} to {asset.replace(inFolder, outFolder)}")
+        p = pdal.Reader(asset)
+        p |= pdal.Filter.reprojection(out_srs = "EPSG:26907", in_axis_ordering = "2,1", error_on_failure = True)
+        p |= pdal.Writer.copc(asset.replace(inFolder, outFolder))
+
+        # execute
+        p.execute()
 

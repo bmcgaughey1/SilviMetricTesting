@@ -74,7 +74,6 @@ if __name__ == "__main__":
     # Throws exception if first asset doesn't have srs or srs for assets don't match
     try:
         srs = scan_for_srs(assets, all_must_match = True)
-        ppsrs = pyproj.CRS.from_json(srs)
     except:
         raise Exception("Problem with srs in assets")
 

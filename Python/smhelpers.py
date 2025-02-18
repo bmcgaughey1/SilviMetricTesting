@@ -109,6 +109,7 @@ def scan_for_srs(assets: list[str], all_must_match: bool = True, testtype: str =
     check that all assets in list have same srs.
 
     :raises Exception: List of assets is empty
+    :raises Exception: First (or only) file in list does not have srs
     :raises Exception: srs for assets in list are different from srs for first asset
     
     :return: srs string in PROJJSON format
@@ -122,6 +123,9 @@ def scan_for_srs(assets: list[str], all_must_match: bool = True, testtype: str =
     p = reader.pipeline()
     qi = p.quickinfo[reader.type]
     srs = json.dumps(qi['srs']['json'])
+    
+    if len(srs) == 0:
+        raise Exception("First file in list does not have srs")
     
     # check for matching SRS for all assets...case insensitive
     # the 'string' test is based on a simple string comparison. Given that you can define
@@ -239,11 +243,12 @@ def build_pipeline(asset: str
                     , out_srs: str = ""
                     , HAG_replaces_Z = False
                    ):
-    """Create pipeline to feed points to SilveMetric
+    """Create pipeline to feed points to SilveMetric. Includes reader, filter for classes and flags, HAG, and reprojection.
+    When computing HAG, options "dem" and "vrt" both expect a filename in ground_VRT that is either a single raster or a VRT file name.
+    Ground surface data must use the same CRS as point data.
 
     :raises Exception: The same classes are included in add_classes and skip_classes
     :raises Exception: Invalid value for HAG_method. Valid choices: "delaunay", "nn", "dem", "vrt"..."dem" and "vrt" are equilvalent.
-    "dem" and "vrt" both expect a filename in ground_VRT that is either a single raster or a VRT file name.
 
     :return: Return PDAL pipline
     """
@@ -335,7 +340,11 @@ def build_pipeline(asset: str
     
     # do projection after HAG so we can use source DEM VRT
     if out_srs != "":
-        p |= pdal.Filter.reprojection(out_srs = f"{out_srs}", in_srs = f"{override_srs}")
+        if override_srs != "":
+            p |= pdal.Filter.reprojection(out_srs = f"{out_srs}", in_srs = f"{override_srs}", error_on_failure = True)
+        else:
+            p |= pdal.Filter.reprojection(out_srs = f"{out_srs}", error_on_failure = True)
+
 
     # replace Z with HAG
     if HAG_method != None and HAG_replaces_Z:
