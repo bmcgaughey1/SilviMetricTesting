@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # delete existing database, add metrics and create database
     # db_metric_CHM() only includes the Z dimension (HAG in this case) and maximum value metric
     rmtree(db_dir, ignore_errors=True)
-    db_metric_CHM(bounds, resolution, srs, db_dir, alignment = 'pixeliscell')
+    db_metric_CHM(bounds, resolution, srs, db_dir, alignment = 'pixelisarea')
 
     ########## walk through assets, scan and shatter ##########
     for asset in assets:
