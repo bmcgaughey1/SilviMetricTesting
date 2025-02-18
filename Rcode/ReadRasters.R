@@ -82,7 +82,7 @@ diff <- tr - r
 summary(diff)
 
 
-folder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/Plumas_subset_normalized_tifs/"
+folder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/NOAA_S3_delaunay_tifs/"
 file <- "m_Z_max.tif"
 r <- rast(paste0(folder, file))
 plot(r)
