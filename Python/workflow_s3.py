@@ -15,7 +15,7 @@ from silvimetric import scan, extract, shatter
 from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 # from silvimetric.resources.metrics.__init__ import grid_metrics
 
-from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds, transform_bounds
+from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds, transform_bounds, inventory_assets
 from smfunc import make_metric, db_metric_subset, db, sc, sh, ex
 
 ###############################################################################    
@@ -57,7 +57,8 @@ if __name__ == "__main__":
     
     ########## Collect and prepare assets: point tiles and DEM tiles ##########
     # get list of COPC assets in data folder...could also be a list of URLs
-    assets = [fn.as_posix() for fn in Path(data_folder).glob("*.copc.laz")]
+    #assets = [fn.as_posix() for fn in Path(data_folder).glob("*.copc.laz")]
+    assets = inventory_assets(data_folder, "*.copc.laz")
 
     if len(assets) == 0:
         raise Exception(f"No point assets found in {data_folder}\n")

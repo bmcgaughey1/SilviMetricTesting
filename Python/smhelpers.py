@@ -14,6 +14,9 @@ import datetime
 from shutil import rmtree
 from osgeo import gdal, osr
 import pyproj
+from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+import requests
+import warnings
 
 from silvimetric import Storage, Metric, Bounds, Pdal_Attributes
 from silvimetric import StorageConfig, ShatterConfig, ExtractConfig
@@ -96,6 +99,41 @@ def transform_bounds(b: Bounds, in_srs: str, out_srs: str, edge_samples: int = 1
         
     return tb
     
+###### build list of assets ######
+# Given a folder or URL and file pattern, build a list of assets. Works for local folders and
+# http or https URLs for folders.
+#
+# This should work fine for local files but may not be particularly robust for URLs. S3
+# sources don't seem to work. Works with rockyweb (USGS lidar data server).
+#
+# Returns list of assets
+#
+# https://stackoverflow.com/questions/11023530/python-to-list-http-files-and-directories
+def inventory_assets(base: str, pattern: str) -> list[str]:
+    """Given a folder or base URL and file pattern,
+    build a list of assets. Pattern can include wildcard characters but 
+    these will be stripped off when base is a URL.
+    
+    :return: list of strings representing assets
+    """
+    # see if we have URL with http or https
+    if 'http' in base.lower():
+        warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+        def listFD(url, ext=''):
+            if url.endswith("/"):
+                url = url[:-1]
+
+            page = requests.get(url).text
+            print(page)
+            soup = BeautifulSoup(page, 'html.parser')
+            return [url + '/' + node.get('href') for node in soup.find_all('a') if node.get('href').endswith(ext)]
+
+        assets = listFD(base, pattern.replace("*", ""))
+    else:
+        assets = [fn.as_posix() for fn in Path(base).glob(pattern)]
+
+    return assets
+
 ###### scan for srs ######
 # scan a list of assets for srs info. Optionally check that all assets
 # in list have same srs.

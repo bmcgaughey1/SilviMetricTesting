@@ -2,9 +2,8 @@
   "pipeline":
   [
     {
-      "bounds": "{\"minx\": 665295.0, \"miny\": 6244545.0, \"maxx\": 665385.0, \"maxy\": 6244665.0, \"crs\": \"PROJCRS[\\\"NAD83 / UTM zone 8N\\\",BASEGEOGCRS[\\\"NAD83\\\",DATUM[\\\"North American Datum 1983\\\",ELLIPSOID[\\\"GRS 1980\\\",6378137,298.257222101,LENGTHUNIT[\\\"metre\\\",1]]],PRIMEM[\\\"Greenwich\\\",0,ANGLEUNIT[\\\"degree\\\",0.0174532925199433]],ID[\\\"EPSG\\\",4269]],CONVERSION[\\\"UTM zone 8N\\\",METHOD[\\\"Transverse Mercator\\\",ID[\\\"EPSG\\\",9807]],PARAMETER[\\\"Latitude of natural origin\\\",0,ANGLEUNIT[\\\"degree\\\",0.0174532925199433],ID[\\\"EPSG\\\",8801]],PARAMETER[\\\"Longitude of natural origin\\\",-135,ANGLEUNIT[\\\"degree\\\",0.0174532925199433],ID[\\\"EPSG\\\",8802]],PARAMETER[\\\"Scale factor at natural origin\\\",0.9996,SCALEUNIT[\\\"unity\\\",1],ID[\\\"EPSG\\\",8805]],PARAMETER[\\\"False easting\\\",500000,LENGTHUNIT[\\\"metre\\\",1],ID[\\\"EPSG\\\",8806]],PARAMETER[\\\"False northing\\\",0,LENGTHUNIT[\\\"metre\\\",1],ID[\\\"EPSG\\\",8807]]],CS[Cartesian,2],AXIS[\\\"(E)\\\",east,ORDER[1],LENGTHUNIT[\\\"metre\\\",1]],AXIS[\\\"(N)\\\",north,ORDER[2],LENGTHUNIT[\\\"metre\\\",1]],USAGE[SCOPE[\\\"Engineering survey, topographic mapping.\\\"],AREA[\\\"North America - between 138\\u00b0W and 132\\u00b0W - onshore and offshore. Canada - British Columbia; Northwest Territiories; Yukon. United States (USA) - Alaska.\\\"],BBOX[48.06,-138,79.42,-132]],ID[\\\"EPSG\\\",26908]]\"}",
-      "filename": "H:/NOAATestData/UTM7/20230707_TNFWI_665000_6244000.copc.laz",
-      "override_srs": "PROJCRS[\"NAD83 / UTM zone 7N\",BASEGEOGCRS[\"NAD83\",DATUM[\"North American Datum 1983\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",4269]],CONVERSION[\"UTM zone 7N\",METHOD[\"Transverse Mercator\",ID[\"EPSG\",9807]],PARAMETER[\"Latitude of natural origin\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8801]],PARAMETER[\"Longitude of natural origin\",-141,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8802]],PARAMETER[\"Scale factor at natural origin\",0.9996,SCALEUNIT[\"unity\",1],ID[\"EPSG\",8805]],PARAMETER[\"False easting\",500000,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8806]],PARAMETER[\"False northing\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8807]]],CS[Cartesian,2],AXIS[\"easting\",east,ORDER[1],LENGTHUNIT[\"metre\",1]],AXIS[\"northing\",north,ORDER[2],LENGTHUNIT[\"metre\",1]],ID[\"EPSG\",26907]]",
+      "bounds": "{\"minx\": 635485.5, \"miny\": 4403157.0, \"maxx\": 635520.0, \"maxy\": 4403248.5, \"crs\": \"COMPOUNDCRS[\\\"NAD83 / UTM zone 10N + NAVD88 height\\\",PROJCRS[\\\"NAD83 / UTM zone 10N\\\",BASEGEOGCRS[\\\"NAD83\\\",DATUM[\\\"North American Datum 1983\\\",ELLIPSOID[\\\"GRS 1980\\\",6378137,298.257222101,LENGTHUNIT[\\\"metre\\\",1]]],PRIMEM[\\\"Greenwich\\\",0,ANGLEUNIT[\\\"degree\\\",0.0174532925199433]],ID[\\\"EPSG\\\",4269]],CONVERSION[\\\"UTM zone 10N\\\",METHOD[\\\"Transverse Mercator\\\",ID[\\\"EPSG\\\",9807]],PARAMETER[\\\"Latitude of natural origin\\\",0,ANGLEUNIT[\\\"degree\\\",0.0174532925199433],ID[\\\"EPSG\\\",8801]],PARAMETER[\\\"Longitude of natural origin\\\",-123,ANGLEUNIT[\\\"degree\\\",0.0174532925199433],ID[\\\"EPSG\\\",8802]],PARAMETER[\\\"Scale factor at natural origin\\\",0.9996,SCALEUNIT[\\\"unity\\\",1],ID[\\\"EPSG\\\",8805]],PARAMETER[\\\"False easting\\\",500000,LENGTHUNIT[\\\"metre\\\",1],ID[\\\"EPSG\\\",8806]],PARAMETER[\\\"False northing\\\",0,LENGTHUNIT[\\\"metre\\\",1],ID[\\\"EPSG\\\",8807]]],CS[Cartesian,2],AXIS[\\\"easting\\\",east,ORDER[1],LENGTHUNIT[\\\"metre\\\",1]],AXIS[\\\"northing\\\",north,ORDER[2],LENGTHUNIT[\\\"metre\\\",1]],ID[\\\"EPSG\\\",26910]],VERTCRS[\\\"NAVD88 height\\\",VDATUM[\\\"North American Vertical Datum 1988\\\"],CS[vertical,1],AXIS[\\\"gravity-related height\\\",up,LENGTHUNIT[\\\"metre\\\",1]],ID[\\\"EPSG\\\",5703]]]\"}",
+      "filename": "H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2133n2147.copc.laz",
       "tag": "readers_copc1",
       "type": "readers.copc"
     },
@@ -18,47 +17,47 @@
       "type": "filters.expression"
     },
     {
-      "allow_extrapolation": "true",
       "inputs":
       [
         "filters_expression1"
       ],
-      "tag": "filters_hag_delaunay1",
-      "type": "filters.hag_delaunay"
+      "raster": "../TestOutput/__grnd__.vrt",
+      "tag": "filters_hag_dem1",
+      "type": "filters.hag_dem",
+      "zero_ground": "false"
     },
     {
-      "expression": "HeightAboveGround >= 2.0 && HeightAboveGround <= 100.0",
+      "expression": "HeightAboveGround >= -100.0 && HeightAboveGround <= 150.0",
       "inputs":
       [
-        "filters_hag_delaunay1"
+        "filters_hag_dem1"
       ],
       "tag": "filters_expression2",
       "type": "filters.expression"
     },
     {
-      "in_srs": "PROJCRS[\"NAD83 / UTM zone 7N\",BASEGEOGCRS[\"NAD83\",DATUM[\"North American Datum 1983\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",4269]],CONVERSION[\"UTM zone 7N\",METHOD[\"Transverse Mercator\",ID[\"EPSG\",9807]],PARAMETER[\"Latitude of natural origin\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8801]],PARAMETER[\"Longitude of natural origin\",-141,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8802]],PARAMETER[\"Scale factor at natural origin\",0.9996,SCALEUNIT[\"unity\",1],ID[\"EPSG\",8805]],PARAMETER[\"False easting\",500000,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8806]],PARAMETER[\"False northing\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8807]]],CS[Cartesian,2],AXIS[\"easting\",east,ORDER[1],LENGTHUNIT[\"metre\",1]],AXIS[\"northing\",north,ORDER[2],LENGTHUNIT[\"metre\",1]],ID[\"EPSG\",26907]]",
-      "inputs":
-      [
-        "filters_expression2"
-      ],
-      "out_srs": "EPSG:26908",
-      "tag": "filters_reprojection1",
-      "type": "filters.reprojection"
-    },
-    {
       "dimensions": "HeightAboveGround=>Z",
       "inputs":
       [
-        "filters_reprojection1"
+        "filters_expression2"
       ],
       "tag": "filters_ferry1",
       "type": "filters.ferry"
     },
     {
-      "dimensions": "X=>xi, Y=>yi",
       "inputs":
       [
         "filters_ferry1"
+      ],
+      "tag": "filters_assign1",
+      "type": "filters.assign",
+      "value": "Z = 0.0 WHERE Z < 0.0"
+    },
+    {
+      "dimensions": "X=>xi, Y=>yi",
+      "inputs":
+      [
+        "filters_assign1"
       ],
       "tag": "filters_ferry2",
       "type": "filters.ferry"
@@ -68,18 +67,18 @@
       [
         "filters_ferry2"
       ],
-      "tag": "filters_assign1",
+      "tag": "filters_assign2",
       "type": "filters.assign",
-      "value": "xi = (X - 663825.0) / 30.0"
+      "value": "xi = (X - 634731.0) / 1.5"
     },
     {
       "inputs":
       [
-        "filters_assign1"
+        "filters_assign2"
       ],
-      "tag": "filters_assign2",
+      "tag": "filters_assign3",
       "type": "filters.assign",
-      "value": "yi = ((6245175.0 - Y) / 30.0) - 1"
+      "value": "yi = ((4404261.0 - Y) / 1.5) - 1"
     }
   ]
 }

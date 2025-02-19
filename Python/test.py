@@ -17,7 +17,7 @@ from silvimetric import StorageConfig, ShatterConfig, ExtractConfig
 from silvimetric import scan, extract, shatter
 from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 
-from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds, transform_bounds
+from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds, transform_bounds, inventory_assets
 
 ###### check for command line argument to run specific test ######
 def testnum() -> int:
@@ -225,4 +225,14 @@ if testnum() == 4:      # only run if asked
 
         # execute
         p.execute()
+
+if testnum() == 5:      # only run if asked
+    #inFolder = "H:/NOAATestData"
+    #inFolder = 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045'
+    inFolder = 'https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/AK_SouthEastLandslides_D22/AK_SELandslides_1_D22/LAZ/'
+    pattern = "*.laz"
+
+    assets = inventory_assets(inFolder, pattern)
+
+    print(assets)
 

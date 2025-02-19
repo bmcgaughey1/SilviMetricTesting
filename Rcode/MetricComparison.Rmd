@@ -248,11 +248,11 @@ points if there HAG is below 0.0. I set the min_HAG value to -100.0 and added an
 (HAG) value for points below 0.0 to 0.0 and the empty cells were eliminated.
 
 As with the HAG metrics, I suspect the interpolation process is causing the bulk of the difference. The remainder
-is due to the right and top edge points in cells in SilviMetric but this should be small differences.
+is due to the right and top edge points in cells in SilviMetric but these should be small differences.
 
 ```{r echo=FALSE, results='hold'}
 # compare CHMs
-# NOTE: need to use pixel-is-cell alignment in SilviMetric to align with FUSION CHM
+# NOTE: need to use PixelIsArea alignment in SilviMetric to align with FUSION CHM
 # file name from FUSION hints at hole filling but this was disabled when creating the CHM
 CHMVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/plumas_CHM_vrt_tifs/"
 SMfile <- "m_Z_max.tif"

@@ -2,8 +2,7 @@
   "pipeline":
   [
     {
-      "filename": "H:/NOAATestData/UTM7/20230707_TNFWI_665000_6244000.copc.laz",
-      "override_srs": "PROJCRS[\"NAD83 / UTM zone 7N\",BASEGEOGCRS[\"NAD83\",DATUM[\"North American Datum 1983\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",4269]],CONVERSION[\"UTM zone 7N\",METHOD[\"Transverse Mercator\",ID[\"EPSG\",9807]],PARAMETER[\"Latitude of natural origin\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8801]],PARAMETER[\"Longitude of natural origin\",-141,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8802]],PARAMETER[\"Scale factor at natural origin\",0.9996,SCALEUNIT[\"unity\",1],ID[\"EPSG\",8805]],PARAMETER[\"False easting\",500000,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8806]],PARAMETER[\"False northing\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8807]]],CS[Cartesian,2],AXIS[\"easting\",east,ORDER[1],LENGTHUNIT[\"metre\",1]],AXIS[\"northing\",north,ORDER[2],LENGTHUNIT[\"metre\",1]],ID[\"EPSG\",26907]]",
+      "filename": "H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2133n2147.copc.laz",
       "tag": "readers_copc1",
       "type": "readers.copc"
     },
@@ -17,41 +16,41 @@
       "type": "filters.expression"
     },
     {
-      "allow_extrapolation": "true",
       "inputs":
       [
         "filters_expression1"
       ],
-      "tag": "filters_hag_delaunay1",
-      "type": "filters.hag_delaunay"
+      "raster": "../TestOutput/__grnd__.vrt",
+      "tag": "filters_hag_dem1",
+      "type": "filters.hag_dem",
+      "zero_ground": "false"
     },
     {
-      "expression": "HeightAboveGround >= 2.0 && HeightAboveGround <= 100.0",
+      "expression": "HeightAboveGround >= -100.0 && HeightAboveGround <= 150.0",
       "inputs":
       [
-        "filters_hag_delaunay1"
+        "filters_hag_dem1"
       ],
       "tag": "filters_expression2",
       "type": "filters.expression"
     },
     {
-      "in_srs": "PROJCRS[\"NAD83 / UTM zone 7N\",BASEGEOGCRS[\"NAD83\",DATUM[\"North American Datum 1983\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",4269]],CONVERSION[\"UTM zone 7N\",METHOD[\"Transverse Mercator\",ID[\"EPSG\",9807]],PARAMETER[\"Latitude of natural origin\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8801]],PARAMETER[\"Longitude of natural origin\",-141,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8802]],PARAMETER[\"Scale factor at natural origin\",0.9996,SCALEUNIT[\"unity\",1],ID[\"EPSG\",8805]],PARAMETER[\"False easting\",500000,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8806]],PARAMETER[\"False northing\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8807]]],CS[Cartesian,2],AXIS[\"easting\",east,ORDER[1],LENGTHUNIT[\"metre\",1]],AXIS[\"northing\",north,ORDER[2],LENGTHUNIT[\"metre\",1]],ID[\"EPSG\",26907]]",
+      "dimensions": "HeightAboveGround=>Z",
       "inputs":
       [
         "filters_expression2"
       ],
-      "out_srs": "EPSG:26908",
-      "tag": "filters_reprojection1",
-      "type": "filters.reprojection"
-    },
-    {
-      "dimensions": "HeightAboveGround=>Z",
-      "inputs":
-      [
-        "filters_reprojection1"
-      ],
       "tag": "filters_ferry1",
       "type": "filters.ferry"
+    },
+    {
+      "inputs":
+      [
+        "filters_ferry1"
+      ],
+      "tag": "filters_assign1",
+      "type": "filters.assign",
+      "value": "Z = 0.0 WHERE Z < 0.0"
     }
   ]
 }
