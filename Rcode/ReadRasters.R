@@ -66,8 +66,8 @@ plot(r)
 #writeDTM(r, paste0(HAGVRTfolder, "m_Z_max.dtm"), xyunits = "M", zunits = "M", coordsys = 2, zone=10, horizdatum = 2, vertdatum = 2)
 
 # didn't do a CHM in AP run
-FUSIONfolder <- "H:/FUSIONTestMetrics/Products_FUSIONTestMetrics_2025-02-03/FINAL_FUSIONTestMetrics_2025-02-03/CanopyHeight_1p5METERS/"
-FUSIONfile <- "CHM_filled_3x_smoothed_1p5METERS.img"
+FUSIONfolder <- "H:/FUSIONTestMetrics/Products_FUSIONTestMetrics_2025-02-04/FINAL_FUSIONTestMetrics_2025-02-04/CanopyHeight_1p5METERS/"
+FUSIONfile <- "CHM_filled_not_smoothed_1p5METERS.img"
 fr <- rast(paste0(FUSIONfolder, FUSIONfile))
 plot(fr)
 #summary(fr)
@@ -80,6 +80,15 @@ tr <- crop(fr, r)
 ext(tr)
 diff <- tr - r
 summary(diff)
+plot(diff)
+
+
+
+
+
+
+
+
 
 
 # canopy height model
