@@ -82,7 +82,7 @@ class assetCatalog:
         """Were hrefs from URL left as is (not prepended with base URL)"""
 
         # scan assets
-        if not self.__scan_assets(scanheaders = scanheaders, href_asis = href_asis):
+        if not self.__scan_assets():
             raise Exception(f"No assets found in {base} matching {pattern}")
 
     def has_assets(self) -> bool:
@@ -200,7 +200,7 @@ class assetCatalog:
                         ) -> bool:
         """Test that all assest have same srs"""
         if self.has_assets():
-            crs = pyproj.CRS.from_json(self.assets[1].srs)
+            crs = pyproj.CRS.from_json(self.assets[0].srs)
             for i in range(1, len(self.assets)):
                 fcrs = pyproj.CRS.from_json(self.assets[i].srs)
 
