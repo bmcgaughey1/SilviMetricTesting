@@ -99,6 +99,9 @@ if __name__ == "__main__":
     # db(bounds, resolution, out_srs, db_dir, 'pixelispoint')      # uses default set of metrics...broken as of 1/30/2025
     db_metric_subset(bounds, resolution, out_srs, db_dir, alignment = 'pixelispoint')
 
+    # 'pixelispoint' = 'aligntocenter'
+    # 'pixelisarea' = 'aligntocorner'
+
     # walk through assets, scan and shatter
     for asset in assets:
         print(f"Processing asset: {asset}\n")

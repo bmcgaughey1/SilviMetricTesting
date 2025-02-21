@@ -17,7 +17,7 @@ from silvimetric import StorageConfig, ShatterConfig, ExtractConfig
 from silvimetric import scan, extract, shatter
 from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 
-from smhelpers import build_pipeline, write_pipeline, scan_for_srs, scan_for_bounds, scan_asset_for_bounds, transform_bounds, inventory_assets
+from smhelpers import *
 
 ###### check for command line argument to run specific test ######
 def testnum() -> int:
@@ -164,8 +164,8 @@ if testnum() == 2 or testnum() == 0:
     print(f"JSON: {srs}\n")
 
     ppsrs = pyproj.CRS.from_json(srs)
-    print(f"WKT: {ppcrs.to_wkt(output_axis_rule=False)}\n")
-    print(f"WKT(axis): {ppcrs.to_wkt(output_axis_rule=True)}\n")
+    print(f"WKT: {ppsrs.to_wkt(output_axis_rule=False)}\n")
+    print(f"WKT(axis): {ppsrs.to_wkt(output_axis_rule=True)}\n")
 
     ppcrs = pyproj.CRS.from_json(srs)
     print(f"WKT: {ppcrs.to_wkt(output_axis_rule=False)}\n")
@@ -235,4 +235,42 @@ if testnum() == 5:      # only run if asked
     assets = inventory_assets(inFolder, pattern)
 
     print(assets)
+
+if testnum() == 6:      # only run if asked
+    inFolder = "H:/NOAATestData"
+    pattern = "*.copc.laz"
+    assets = [fn.as_posix() for fn in Path(inFolder).glob(pattern)]
+
+    # rockyweb is VERY slow, tested this with just 3 files and it took 10+ minutes to read the headers
+    # use with scanheaders = False to just get file names
+    #baseURL = 'https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/projects/WA_ElwhaRiver_2015/WA_Elwha_TB_2015/LAZ'
+    #pattern = ".laz"
+
+    # NOAA s3 data doesn't allow directory listing
+    #baseURL = 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045'
+
+    # NOAA bulk download page...this works but you must use href_asis option when creating the catalog
+    baseURL = "https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/laz/geoid12b/8539/index.html"
+    pattern = ".laz"
+
+    assets = [
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6244000.copc.laz',
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6243000.copc.laz',
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6244000.copc.laz',
+        'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_665000_6243000.copc.laz'
+        ]
+
+    assets = [
+        'https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/WA_ElwhaRiver_2015/WA_Elwha_TB_2015/LAZ/USGS_LPC_WA_ElwhaRiver_2015_10UDU702317.laz',
+        'https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/WA_ElwhaRiver_2015/WA_Elwha_TB_2015/LAZ/USGS_LPC_WA_ElwhaRiver_2015_10UDU702310.laz',
+        'https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/WA_ElwhaRiver_2015/WA_Elwha_TB_2015/LAZ/USGS_LPC_WA_ElwhaRiver_2015_10UDU695310.laz',
+        'https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/WA_ElwhaRiver_2015/WA_Elwha_TB_2015/LAZ/USGS_LPC_WA_ElwhaRiver_2015_10UDU695317.laz',
+        'https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/WA_ElwhaRiver_2015/WA_Elwha_TB_2015/LAZ/USGS_LPC_WA_ElwhaRiver_2015_10UDU687317.laz'
+    ]
+    
+    #cat = assetCatalog(inFolder, pattern, assets=assets)
+    #cat = assetCatalog(inFolder, pattern)
+    cat = assetCatalog(baseURL, pattern, scanheaders=True, href_asis=True)
+    cat.print()
+
 

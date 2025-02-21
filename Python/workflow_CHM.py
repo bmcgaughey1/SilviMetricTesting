@@ -109,6 +109,9 @@ if __name__ == "__main__":
     rmtree(db_dir, ignore_errors=True)
     db_metric_CHM(bounds, resolution, srs, db_dir, alignment = 'pixelisarea')
 
+    # 'pixelispoint' = 'aligntocenter'
+    # 'pixelisarea' = 'aligntocorner'
+
     ########## walk through assets, scan and shatter ##########
     for asset in assets:
         # print(f"Processing asset: {asset}\n")
