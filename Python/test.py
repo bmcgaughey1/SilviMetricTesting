@@ -240,8 +240,10 @@ if testnum() == 5:      # only run if asked
 
 if testnum() == 6:      # only run if asked
     # testing for assetCatalog class with various sources for data
-    inFolder = "H:/NOAATestData"
-    pattern = "*.copc.laz"
+    #inFolder = "H:/NOAATestData"
+    inFolder = "H:/NOAATestData/UTM7"
+    #pattern = "*.copc.laz"
+    pattern = "*.laz"
     assets = [fn.as_posix() for fn in Path(inFolder).glob(pattern)]
 
     # rockyweb is VERY slow, tested this with just 3 files and it took 10+ minutes to read the headers
@@ -283,7 +285,9 @@ if testnum() == 6:      # only run if asked
     #cat = assetCatalog(baseURL, pattern, scanheaders=True, href_asis=True)
     cat.print(srs=False)
 
-    cat.to_geoparquet("assets.parquet")
+    cat.to_file("assets.parquet")
+    #cat.to_file("assets.shp")
+    #cat.to_file("assets.json")
 
     # iterate over assets
     #if cat.is_valid():

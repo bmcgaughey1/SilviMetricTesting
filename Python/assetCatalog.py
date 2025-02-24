@@ -116,6 +116,7 @@ class assetCatalog:
             print(f"Catalog of: {self.base} matching {self.pattern}")
             print(f"Overall bounding box: {self.overallbounds}")
             print(f"Total number of points: {self.totalpoints}")
+            print(f"Coordinate system information: {self.srs}")
             print(f"Number of assets: {len(self.assets)}")
 
             if filename or bounds or srs:
@@ -180,6 +181,7 @@ class assetCatalog:
                 self.assets.append(assetInfo(ta, b, np, srs))
 
             self.overallbounds = self.overall_bounds()
+            self.srs = self.assets[0].srs
             self.sum_points()
 
             if (self.testsrs):
@@ -187,6 +189,9 @@ class assetCatalog:
         elif len(tassets):
             for ta in tassets:
                 self.assets.append(assetInfo(ta, bounds = None, numpoints = 0, srs = ""))
+
+            self.overallbounds = None
+            self.totalpoints = 0
 
         return len(self.assets)
 
@@ -241,9 +246,9 @@ class assetCatalog:
         else:
             return False
         
-    def to_geoparquet(self
-                      , filename
-                      ) -> bool:
+    def to_file(self
+               , filename: str
+               ) -> bool:
         """convert catalog to geopandas object and write as geoparquet"""
         if self.has_assets():
             data = {
@@ -254,7 +259,14 @@ class assetCatalog:
 
             gdf = gpd.GeoDataFrame(data, crs=self.srs)
 
-            gdf.to_parquet(filename)
+            if filename.lower().endswith(".parquet"):
+                gdf.to_parquet(filename)
+            elif filename.lower().endswith(".shp"):
+                gdf.to_file(filename)
+            elif filename.lower().endswith(".json"):
+                gdf.to_file(filename)
+            else:
+                raise Exception(f"Unsupported format for: {filename}")
 
             return True
         
