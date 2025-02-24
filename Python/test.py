@@ -17,6 +17,8 @@ from silvimetric import StorageConfig, ShatterConfig, ExtractConfig
 from silvimetric import scan, extract, shatter
 from silvimetric.resources.metrics.stats import sm_min, sm_max, mean
 
+from assetCatalog import assetCatalog
+
 from smhelpers import *
 
 ###### check for command line argument to run specific test ######
@@ -247,18 +249,18 @@ if testnum() == 6:      # only run if asked
     #baseURL = 'https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/projects/WA_ElwhaRiver_2015/WA_Elwha_TB_2015/LAZ'
     #pattern = ".laz"
 
-    # NOAA s3 data doesn't allow directory listing
+    # ****** NOAA s3 data doesn't allow directory listing
     #baseURL = 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045'
 
     # NOAA bulk download page...this works but you must use href_asis option when creating the catalog because the page has
     # full URLs for each data file
     baseURL = "https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/laz/geoid12b/8539/index.html"        # 64 files
     baseURL = "https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/laz/geoid12b/9577/index.html"        # smaller project with 17 files
-    pattern = ".laz"
+    #pattern = ".laz"
 
     # for ept, pass the ept.json file as assets = [baseURL]...base and pattern should be "" but can be anything
     baseURL = "https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/entwine/geoid12b/9577/ept.json"
-    pattern = "ept.json"
+    #pattern = "ept.json"
 
     assets = [
         'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/laz/geoid12b/10045/20230707_TNFWI_664000_6244000.copc.laz',
@@ -275,10 +277,15 @@ if testnum() == 6:      # only run if asked
         'https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/WA_ElwhaRiver_2015/WA_Elwha_TB_2015/LAZ/USGS_LPC_WA_ElwhaRiver_2015_10UDU687317.laz'
     ]
     
-    cat = assetCatalog("", "", assets=[baseURL])
+    #cat = assetCatalog("", "", assets=[baseURL])
     #cat = assetCatalog(inFolder, pattern, assets=assets)
-    #cat = assetCatalog(inFolder, pattern)
+    cat = assetCatalog(inFolder, pattern)
     #cat = assetCatalog(baseURL, pattern, scanheaders=True, href_asis=True)
-    cat.print(srs=True)
+    cat.print(srs=False)
 
+    cat.to_geoparquet("assets.parquet")
 
+    # iterate over assets
+    #if cat.is_valid():
+    #    for asset in cat.assets:
+    #        print(asset.filename)
