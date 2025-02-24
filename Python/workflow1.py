@@ -87,7 +87,8 @@ if __name__ == "__main__":
 
     # build ground VRT
     gdal.UseExceptions()
-    gvrt = gdal.BuildVRT(ground_VRT_filename, ground_assets)
+    opt = gdal.BuildVRTOptions(resampleAlg='bilinear')
+    gvrt = gdal.BuildVRT(ground_VRT_filename, ground_assets, opt)
     
     ######### create db #########
     # get overall bounding box for point data and adjust to cell lines

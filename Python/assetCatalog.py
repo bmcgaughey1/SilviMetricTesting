@@ -258,6 +258,7 @@ class assetCatalog:
             }
 
             gdf = gpd.GeoDataFrame(data, crs=self.srs)
+            gdf.to_s
 
             if filename.lower().endswith(".parquet"):
                 gdf.to_parquet(filename)
