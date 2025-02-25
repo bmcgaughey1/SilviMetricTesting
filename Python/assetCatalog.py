@@ -88,13 +88,17 @@ class assetCatalog:
             raise Exception(f"No assets found in {base} matching {pattern}")
 
     def is_valid(self) -> bool:
-        """Test to see if catalog is valid (has assets, headers were scanned, 
-        srs matched for all assets)."""
+        """
+        Test to see if catalog is valid (has assets, headers were scanned, 
+        srs matched for all assets).
+        """
         
         return self.has_assets() and self.scanheaders and self.srsmatch
 
     def has_assets(self) -> bool:
-        """Test to see if catalog has assets."""
+        """
+        Test to see if catalog has assets.
+        """
         if len(self.assets) > 0:
             if isinstance(self.assets[0], assetInfo):
                 return True
@@ -102,7 +106,9 @@ class assetCatalog:
         return False
         
     def headers_scanned(self) -> bool:
-        """Returns whether or not asset headers were scanned."""
+        """
+        Returns whether or not asset headers were scanned.
+        """
         return self.scanheaders
     
     def print(self
@@ -111,7 +117,9 @@ class assetCatalog:
               , numpoints: bool = True
               , srs: bool = False
               ):
-        """Pretty-print catalog assets"""
+        """
+        Pretty-print catalog assets.
+        """
         if self.has_assets():
             print(f"Catalog of: {self.base} matching {self.pattern}")
             print(f"Overall bounding box: {self.overallbounds}")
@@ -132,10 +140,94 @@ class assetCatalog:
         else:
             print("No assets to print")
 
-    def __scan_assets(self) -> int:
-        """Build a list of assets including srs and bounding box.
+    def update_overall_bounds(self) -> Bounds:
+        """
+        Update the overall bounding box for the assets in catalog.
+        """
+        if self.is_valid():
+            bb = Bounds(sys.float_info.max, sys.float_info.max, -sys.float_info.max, -sys.float_info.max)
+
+            # Update overall bounds with asset bounds
+            for asset in self.assets:
+                # compare bounds
+                if asset.bounds.minx < bb.minx:
+                    bb.minx = asset.bounds.minx
+                if asset.bounds.miny < bb.miny:
+                    bb.miny = asset.bounds.miny
+                if asset.bounds.maxx > bb.maxx:
+                    bb.maxx = asset.bounds.maxx
+                if asset.bounds.maxy > bb.maxy:
+                    bb.maxy = asset.bounds.maxy
+
+            return bb
         
-        :return: number of assets found
+        return None
+    
+    def to_file(self
+               , filename: str
+               ) -> bool:
+        """
+        Write catalog to file. Supports geoparquet, shapfile, geopackage, geojson and json (written as geojson).
+        
+        :raises ValueError: Unsupported file type
+
+        Returns:
+            bool, True if successful
+        """
+        if self.is_valid():
+            data = {
+                'filename': [asset.filename for asset in self.assets],
+                'numpoints': [asset.numpoints for asset in self.assets],
+                'geometry': [box(asset.bounds.minx, asset.bounds.miny, asset.bounds.maxx, asset.bounds.maxy) for asset in self.assets]
+            }
+
+            gdf = gpd.GeoDataFrame(data, crs=self.srs)
+
+            if filename.lower().endswith(".parquet"):
+                gdf.to_parquet(filename)
+            elif filename.lower().endswith(".shp"):
+                gdf.to_file(filename, crs = self.srs)
+            elif filename.lower().endswith(".geojson") or filename.lower().endswith(".json"):
+                gdf.to_file(filename, driver = 'geoJSON', crs = self.srs)
+            elif filename.lower().endswith(".gpkg"):
+                gdf.to_file(filename, driver = 'GPKG', layer = 'assets', crs = self.srs)
+            else:
+                raise ValueError(f"Format not supported: {filename}")
+            return True
+        
+        return False
+
+    def __test_assets_srs(self
+                    , testtype: str = "string"
+                    ) -> bool:
+        """
+        Test that all assest have same srs.
+        """
+        if self.has_assets():
+            crs = pyproj.CRS.from_json(self.assets[0].srs)
+            for i in range(1, len(self.assets)):
+                fcrs = pyproj.CRS.from_json(self.assets[i].srs)
+
+                if testtype.lower() == 'string':
+                    if crs.to_wkt().lower() != fcrs.to_wkt().lower():
+                        return False
+                else:
+                    if not crs.is_exact_same(fcrs):
+                        return False
+            
+            return True
+        else:
+            return False
+            
+    def __scan_assets(self) -> int:
+        """
+        Build a list of assets including srs and bounding box.
+        
+        :raises ValueError: unsupported asset type
+        :raises Exception: assest has no coordinate system information
+
+        Returns:
+            integer, number of assets found
         """
         # if assets is not empty, assume assets was passed as a list of strings so we can skip the directory listing
         if not len(self.assets):
@@ -173,19 +265,19 @@ class assetCatalog:
                     b = Bounds.from_string((json.dumps(qi['bounds'])))
                     np = int(json.dumps(qi['num_points']))
                 else:
-                    raise Exception(f"{self.assettype} not supported!")
+                    raise ValueError(f"{self.assettype} type not supported!")
                 
                 if len(srs) == 0:
                     raise Exception(f"Asset {ta} does not have srs")
                 
                 self.assets.append(assetInfo(ta, b, np, srs))
 
-            self.overallbounds = self.overall_bounds()
+            self.overallbounds = self.update_overall_bounds()
             self.srs = self.assets[0].srs
-            self.sum_points()
+            self.__sum_points()
 
             if (self.testsrs):
-                self.srsmatch = self.test_assets_srs(testtype = self.testtype)
+                self.srsmatch = self.__test_assets_srs(testtype = self.testtype)
         elif len(tassets):
             for ta in tassets:
                 self.assets.append(assetInfo(ta, bounds = None, numpoints = 0, srs = ""))
@@ -195,9 +287,9 @@ class assetCatalog:
 
         return len(self.assets)
 
-    def sum_points(self) -> int:
+    def __sum_points(self) -> int:
         self.totalpoints = 0
-        if self.has_assets():
+        if self.is_valid():
             for asset in self.assets:
                 self.totalpoints = self.totalpoints + asset.numpoints
 
@@ -205,70 +297,3 @@ class assetCatalog:
         
         return 0
     
-    def overall_bounds(self) -> Bounds:
-        """Update the overall bounding box for the assets in catalog"""
-        if self.has_assets():
-            bb = Bounds(sys.float_info.max, sys.float_info.max, -sys.float_info.max, -sys.float_info.max)
-
-            # Update overall bounds with asset bounds
-            for asset in self.assets:
-                # compare bounds
-                if asset.bounds.minx < bb.minx:
-                    bb.minx = asset.bounds.minx
-                if asset.bounds.miny < bb.miny:
-                    bb.miny = asset.bounds.miny
-                if asset.bounds.maxx > bb.maxx:
-                    bb.maxx = asset.bounds.maxx
-                if asset.bounds.maxy > bb.maxy:
-                    bb.maxy = asset.bounds.maxy
-
-            return bb
-        
-        return None
-    
-    def test_assets_srs(self
-                        , testtype: str = "string"
-                        ) -> bool:
-        """Test that all assest have same srs"""
-        if self.has_assets():
-            crs = pyproj.CRS.from_json(self.assets[0].srs)
-            for i in range(1, len(self.assets)):
-                fcrs = pyproj.CRS.from_json(self.assets[i].srs)
-
-                if testtype.lower() == 'string':
-                    if crs.to_wkt().lower() != fcrs.to_wkt().lower():
-                        return False
-                else:
-                    if not crs.is_exact_same(fcrs):
-                        return False
-            
-            return True
-        else:
-            return False
-        
-    def to_file(self
-               , filename: str
-               ) -> bool:
-        """convert catalog to geopandas object and write as geoparquet"""
-        if self.has_assets():
-            data = {
-                'filename': [asset.filename for asset in self.assets],
-                'numpoints': [asset.numpoints for asset in self.assets],
-                'geometry': [box(asset.bounds.minx, asset.bounds.miny, asset.bounds.maxx, asset.bounds.maxy) for asset in self.assets]
-            }
-
-            gdf = gpd.GeoDataFrame(data, crs=self.srs)
-            gdf.to_s
-
-            if filename.lower().endswith(".parquet"):
-                gdf.to_parquet(filename)
-            elif filename.lower().endswith(".shp"):
-                gdf.to_file(filename)
-            elif filename.lower().endswith(".json"):
-                gdf.to_file(filename)
-            else:
-                raise Exception(f"Unsupported format for: {filename}")
-
-            return True
-        
-        return False
