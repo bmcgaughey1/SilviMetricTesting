@@ -204,18 +204,21 @@ class assetCatalog:
         Test that all assest have same srs.
         """
         if self.has_assets():
-            crs = pyproj.CRS.from_json(self.assets[0].srs)
-            for i in range(1, len(self.assets)):
-                fcrs = pyproj.CRS.from_json(self.assets[i].srs)
+            if self.assets[0].srs != "":
+                crs = pyproj.CRS.from_json(self.assets[0].srs)
+                for i in range(1, len(self.assets)):
+                    fcrs = pyproj.CRS.from_json(self.assets[i].srs)
 
-                if testtype.lower() == 'string':
-                    if crs.to_wkt().lower() != fcrs.to_wkt().lower():
-                        return False
-                else:
-                    if not crs.is_exact_same(fcrs):
-                        return False
-            
-            return True
+                    if testtype.lower() == 'string':
+                        if crs.to_wkt().lower() != fcrs.to_wkt().lower():
+                            return False
+                    else:
+                        if not crs.is_exact_same(fcrs):
+                            return False
+                
+                return True
+            else:
+                return False
         else:
             return False
             
@@ -261,14 +264,17 @@ class assetCatalog:
                     reader = pdal.Reader(ta)
                     p = reader.pipeline()
                     qi = p.quickinfo[reader.type]
-                    srs = json.dumps(qi['srs']['json'])
+                    try:
+                        srs = json.dumps(qi['srs']['json'])
+                    except:
+                        srs = ""
                     b = Bounds.from_string((json.dumps(qi['bounds'])))
                     np = int(json.dumps(qi['num_points']))
                 else:
                     raise ValueError(f"{self.assettype} type not supported!")
                 
-                if len(srs) == 0:
-                    raise Exception(f"Asset {ta} does not have srs")
+                # if len(srs) == 0:
+                #     raise Exception(f"Asset {ta} does not have srs")
                 
                 self.assets.append(assetInfo(ta, b, np, srs))
 

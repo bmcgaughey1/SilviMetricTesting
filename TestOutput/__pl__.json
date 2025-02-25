@@ -26,7 +26,7 @@
       "zero_ground": "false"
     },
     {
-      "expression": "HeightAboveGround >= -100.0 && HeightAboveGround <= 150.0",
+      "expression": "HeightAboveGround >= 2.0 && HeightAboveGround <= 150.0",
       "inputs":
       [
         "filters_hag_dem1"
@@ -42,15 +42,6 @@
       ],
       "tag": "filters_ferry1",
       "type": "filters.ferry"
-    },
-    {
-      "inputs":
-      [
-        "filters_ferry1"
-      ],
-      "tag": "filters_assign1",
-      "type": "filters.assign",
-      "value": "Z = 0.0 WHERE Z < 0.0"
     }
   ]
 }

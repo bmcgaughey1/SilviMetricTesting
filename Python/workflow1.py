@@ -35,7 +35,7 @@ if __name__ == "__main__":
     # Ground models for the area were derived from class 2 points in a FUSION run.
 
     ########## Setup #############
-    project_name = "Plumas"
+    project_name = "Plumas_VRT_bilinear"
     resolution = 30.0
     use_normalized_point_data = False        # True: data already has HAG, False: data has elevation
     HAG_method = "vrt"                       # choices: "vrt", "delaunay", "nn"
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     # build ground VRT
     gdal.UseExceptions()
     opt = gdal.BuildVRTOptions(resampleAlg='bilinear')
-    gvrt = gdal.BuildVRT(ground_VRT_filename, ground_assets, opt)
+    gvrt = gdal.BuildVRT(ground_VRT_filename, ground_assets, options = opt)
     
     ######### create db #########
     # get overall bounding box for point data and adjust to cell lines
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     rmtree(db_dir, ignore_errors=True)
     make_metric()
     # db(bounds, resolution, srs, db_dir, 'pixelispoint')      # uses default set of metrics...broken as of 1/30/2025
-    db_metric_subset(bounds, resolution, srs, db_dir, alignment = 'pixelispoint')
+    db_metric_subset(bounds, resolution, srs, db_dir, alignment = 'aligntocenter')
 
     # 'pixelispoint' = 'aligntocenter'
     # 'pixelisarea' = 'aligntocorner'

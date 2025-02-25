@@ -242,6 +242,7 @@ if testnum() == 6:      # only run if asked
     # testing for assetCatalog class with various sources for data
     #inFolder = "H:/NOAATestData"
     inFolder = "H:/NOAATestData/UTM7"
+    inFolder = "T:/FS/Reference/RSImagery/ProcessedData/r06/R06_DRM_Deliverables/PointCloud/OKW_2021_MinerCreek/1_LAZ/"
     #pattern = "*.copc.laz"
     pattern = "*.laz"
     assets = [fn.as_posix() for fn in Path(inFolder).glob(pattern)]
@@ -281,8 +282,9 @@ if testnum() == 6:      # only run if asked
     
     #cat = assetCatalog("", "", assets=[baseURL])
     #cat = assetCatalog(inFolder, pattern, assets=assets)
-    cat = assetCatalog(inFolder, pattern)
+    cat = assetCatalog(inFolder, pattern, testsrs=True)
     #cat = assetCatalog(baseURL, pattern, scanheaders=True, href_asis=True)
+    
     cat.print(srs=False)
 
     #cat.to_file("assets.parquet")
