@@ -241,8 +241,10 @@ if testnum() == 5:      # only run if asked
 if testnum() == 6:      # only run if asked
     # testing for assetCatalog class with various sources for data
     #inFolder = "H:/NOAATestData"
-    inFolder = "H:/NOAATestData/UTM7"
-    inFolder = "T:/FS/Reference/RSImagery/ProcessedData/r06/R06_DRM_Deliverables/PointCloud/OKW_2021_MinerCreek/1_LAZ/"
+    #inFolder = "H:/NOAATestData/UTM7"
+    inFolder = "H:/FSTestData/R6_noCRS"
+    #inFolder = "H:/FSTestData/R6_hasCRS"
+    #inFolder = "T:/FS/Reference/RSImagery/ProcessedData/r06/R06_DRM_Deliverables/PointCloud/OKW_2021_MinerCreek/1_LAZ/"
     #pattern = "*.copc.laz"
     pattern = "*.laz"
     assets = [fn.as_posix() for fn in Path(inFolder).glob(pattern)]
@@ -285,12 +287,12 @@ if testnum() == 6:      # only run if asked
     cat = assetCatalog(inFolder, pattern, testsrs=True)
     #cat = assetCatalog(baseURL, pattern, scanheaders=True, href_asis=True)
     
-    cat.print(srs=False)
+    cat.print(srs=True)
 
     #cat.to_file("assets.parquet")
     #cat.to_file("assets.shp")
     #cat.to_file("assets.geojson")
-    cat.to_file("assets.gpkg")
+    #cat.to_file("assets.gpkg")
 
     # iterate over assets
     #if cat.is_valid():

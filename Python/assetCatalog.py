@@ -3,7 +3,14 @@
 #
 ###############################################################################    
 ############## Helper functions for SilviMetric workflows #####################
-###############################################################################    
+###############################################################################
+#
+# Information available from PDAL's quickinfo command is limited and does
+# not represent all information available in point file headers. I have older
+# code in R that reads and captures all header information when creating
+# index files.
+#
+###############################################################################
 import os
 import sys
 from pathlib import Path
@@ -40,6 +47,11 @@ class assetInfo:
         """number of points in asset"""
         self.srs = srs
         """srs for asset...comes from point file header"""
+
+        if srs != "":
+            self.hassrs = True
+        else:
+            self.hassrs = False
 
 class assetCatalog:
     """Collection of assets along with overall information"""
@@ -87,13 +99,20 @@ class assetCatalog:
         if not self.__scan_assets():
             raise Exception(f"No assets found in {base} matching {pattern}")
 
-    def is_valid(self) -> bool:
+    def is_complete(self) -> bool:
         """
-        Test to see if catalog is valid (has assets, headers were scanned, 
+        Test to see if catalog is complete (has assets and srs, headers were scanned, 
         srs matched for all assets).
         """
         
         return self.has_assets() and self.scanheaders and self.srsmatch
+
+    def is_valid(self) -> bool:
+        """
+        Test to see if catalog is valid (has assets and headers were scanned).
+        """
+        
+        return self.has_assets() and self.scanheaders
 
     def has_assets(self) -> bool:
         """
@@ -132,9 +151,9 @@ class assetCatalog:
                 for asset in self.assets:
                     print(f"   Asset {cnt}:")
                     if filename: print(f"      {asset.filename}")
-                    if bounds: print(f"      {asset.bounds}")
-                    if numpoints: print(f"      {asset.numpoints}")
-                    if srs: print(f"      {asset.srs}")
+                    if bounds: print(f"      bounds: {asset.bounds}")
+                    if numpoints: print(f"      numpoints: {asset.numpoints}")
+                    if srs: print(f"      srs: {asset.srs}")
 
                     cnt = cnt + 1
         else:
@@ -204,10 +223,10 @@ class assetCatalog:
         Test that all assest have same srs.
         """
         if self.has_assets():
-            if self.assets[0].srs != "":
+            if self.assets[0].hassrs:
                 crs = pyproj.CRS.from_json(self.assets[0].srs)
-                for i in range(1, len(self.assets)):
-                    fcrs = pyproj.CRS.from_json(self.assets[i].srs)
+                for asset in self.assets[1:]:
+                    fcrs = pyproj.CRS.from_json(asset.srs)
 
                     if testtype.lower() == 'string':
                         if crs.to_wkt().lower() != fcrs.to_wkt().lower():
@@ -224,7 +243,9 @@ class assetCatalog:
             
     def __scan_assets(self) -> int:
         """
-        Build a list of assets including srs and bounding box.
+        Build a list of assets including srs and bounding box. Uses PDAL
+        quickinfo to get header information so the entire file header is
+        not available.
         
         :raises ValueError: unsupported asset type
         :raises Exception: assest has no coordinate system information
@@ -233,29 +254,12 @@ class assetCatalog:
             integer, number of assets found
         """
         # if assets is not empty, assume assets was passed as a list of strings so we can skip the directory listing
-        if not len(self.assets):
-            # see if we have URL with http or https
-            if 'http' in self.base.lower():
-                warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
-                def listFD(url, ext=''):
-                    if url.endswith("/"):
-                        url = url[:-1]
-
-                    page = requests.get(url).text
-                    soup = BeautifulSoup(page, 'html.parser')
-
-                    if not self.href_asis:
-                        return [url + '/' + node.get('href') for node in soup.find_all('a') if node.get('href').endswith(ext)]
-                    else:
-                        return [node.get('href') for node in soup.find_all('a') if node.get('href').endswith(ext)]
-
-                tassets = listFD(self.base, self.pattern.replace("*", ""))
-            else:
-                tassets = [fn.as_posix() for fn in Path(self.base).glob(self.pattern)]
+        if len(self.assets) == 0:
+            tassets = self.__list_assets()
         else:
             tassets = self.assets
 
-        # read header and get bounding box and srs
+        # use PDAL quickinfo to get bounding box, srs, and number of points
         if len(tassets) and self.scanheaders:
             self.assets = []
             for ta in tassets:
@@ -292,6 +296,34 @@ class assetCatalog:
             self.totalpoints = 0
 
         return len(self.assets)
+
+    def __list_assets(self) -> list[str]:
+        """
+        List assets using base and pattern.
+
+        Returns:
+            List of asset URLs or file specifiers. Empty list if no matching files found.
+        """
+        # see if we have URL with http or https
+        if 'http' in self.base.lower():
+            warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+            def listFD(url, ext=''):
+                if url.endswith("/"):
+                    url = url[:-1]
+
+                page = requests.get(url).text
+                soup = BeautifulSoup(page, 'html.parser')
+
+                if not self.href_asis:
+                    return [url + '/' + node.get('href') for node in soup.find_all('a') if node.get('href').endswith(ext)]
+                else:
+                    return [node.get('href') for node in soup.find_all('a') if node.get('href').endswith(ext)]
+
+            tassets = listFD(self.base, self.pattern.replace("*", ""))
+        else:
+            tassets = [fn.as_posix() for fn in Path(self.base).glob(self.pattern)]
+
+        return tassets
 
     def __sum_points(self) -> int:
         self.totalpoints = 0

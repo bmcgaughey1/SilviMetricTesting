@@ -2,7 +2,7 @@
   "pipeline":
   [
     {
-      "filename": "H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2133n2147.copc.laz",
+      "filename": "H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2130n2145.copc.laz",
       "tag": "readers_copc1",
       "type": "readers.copc"
     },
@@ -20,7 +20,7 @@
       [
         "filters_expression1"
       ],
-      "raster": "../TestOutput/__grnd__.vrt",
+      "raster": "C:\\Users\\bmcgaughey\\SilviMetricTesting\\Python\\..\\TestOutput\\__grnd__.vrt",
       "tag": "filters_hag_dem1",
       "type": "filters.hag_dem",
       "zero_ground": "false"

@@ -3,7 +3,7 @@
   <GeoTransform>  6.3471000000000000e+05,  1.0000000000000000e+00,  0.0000000000000000e+00,  4.4042710000000000e+06,  0.0000000000000000e+00, -1.0000000000000000e+00</GeoTransform>
   <VRTRasterBand dataType="Float32" band="1">
     <NoDataValue>-9999</NoDataValue>
-    <ComplexSource resampling="bilinear">
+    <ComplexSource>
       <SourceFilename relativeToVRT="0">H:/FUSIONTestData/ground/BLOCK1_BE_1METERS_TRIMMED.img</SourceFilename>
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="2401" RasterYSize="2011" DataType="Float32" BlockXSize="64" BlockYSize="64" />
@@ -11,7 +11,7 @@
       <DstRect xOff="0" yOff="1980" xSize="2401" ySize="2011" />
       <NODATA>-9999</NODATA>
     </ComplexSource>
-    <ComplexSource resampling="bilinear">
+    <ComplexSource>
       <SourceFilename relativeToVRT="0">H:/FUSIONTestData/ground/BLOCK2_BE_1METERS_TRIMMED.img</SourceFilename>
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="2401" RasterYSize="1981" DataType="Float32" BlockXSize="64" BlockYSize="64" />
@@ -19,7 +19,7 @@
       <DstRect xOff="0" yOff="0" xSize="2401" ySize="1981" />
       <NODATA>-9999</NODATA>
     </ComplexSource>
-    <ComplexSource resampling="bilinear">
+    <ComplexSource>
       <SourceFilename relativeToVRT="0">H:/FUSIONTestData/ground/BLOCK3_BE_1METERS_TRIMMED.img</SourceFilename>
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="2371" RasterYSize="2011" DataType="Float32" BlockXSize="64" BlockYSize="64" />
@@ -27,7 +27,7 @@
       <DstRect xOff="2400" yOff="1980" xSize="2371" ySize="2011" />
       <NODATA>-9999</NODATA>
     </ComplexSource>
-    <ComplexSource resampling="bilinear">
+    <ComplexSource>
       <SourceFilename relativeToVRT="0">H:/FUSIONTestData/ground/BLOCK4_BE_1METERS_TRIMMED.img</SourceFilename>
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="2371" RasterYSize="1981" DataType="Float32" BlockXSize="64" BlockYSize="64" />
