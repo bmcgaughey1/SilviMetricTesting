@@ -51,12 +51,12 @@ if __name__ == "__main__":
     # get path to this python file. Outputs are in folders relative to this code.
     curpath = Path(os.path.dirname(os.path.realpath(__file__)))     # folder containing this python file
 
-    db_dir_path = Path(curpath  / f"../TestOutput/{project_name}_{HAG_method}.tdb")
-    db_dir = db_dir_path.as_posix()
+    db_dir = (Path(curpath  / f"../TestOutput/{project_name}_{HAG_method}.tdb")).as_posix()
+    #db_dir = db_dir_path.as_posix()
     out_dir = (curpath / f"../TestOutput/{project_name}_{HAG_method}_tifs").as_posix()
 
-    pipeline_filename = Path(curpath  / f"../TestOutput/__pl__.json")
-    ground_VRT_filename = Path(curpath  / f"../TestOutput/__grnd__.vrt")
+    pipeline_filename = (Path(curpath  / f"../TestOutput/__pl__.json")).as_posix()
+    ground_VRT_filename = (Path(curpath  / f"../TestOutput/__grnd__.vrt")).as_posix()
     
     ########## Collect and prepare assets: point tiles and DEM tiles ##########
     # get list of assets in data folder...could also be a list of URLs
@@ -131,8 +131,8 @@ if __name__ == "__main__":
         scan_info = sc(asset.bounds, pipeline_filename, db_dir)
         
         # use recommended tile size
-        tile_size = int(scan_info['tile_info']['recommended'])
-        #tile_size = int(scan_info['tile_info']['mean'])
+        #tile_size = int(scan_info['tile_info']['recommended'])
+        tile_size = int(scan_info['tile_info']['mean'])
         
         # shatter
         sh(asset.bounds, tile_size, pipeline_filename, db_dir)
