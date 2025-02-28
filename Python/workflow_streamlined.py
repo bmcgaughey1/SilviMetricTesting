@@ -52,7 +52,6 @@ if __name__ == "__main__":
     curpath = Path(os.path.dirname(os.path.realpath(__file__)))     # folder containing this python file
 
     db_dir = (Path(curpath  / f"../TestOutput/{project_name}_{HAG_method}.tdb")).as_posix()
-    #db_dir = db_dir_path.as_posix()
     out_dir = (curpath / f"../TestOutput/{project_name}_{HAG_method}_tifs").as_posix()
 
     pipeline_filename = (Path(curpath  / f"../TestOutput/__pl__.json")).as_posix()
