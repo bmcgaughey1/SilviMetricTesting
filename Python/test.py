@@ -241,12 +241,12 @@ if testnum() == 5:      # only run if asked
 if testnum() == 6:      # only run if asked
     # testing for assetCatalog class with various sources for data
     #inFolder = "H:/NOAATestData"
-    #inFolder = "H:/NOAATestData/UTM7"
-    inFolder = "H:/FSTestData/R6_noCRS"
+    inFolder = "H:/NOAATestData/UTM7"
+    #inFolder = "H:/FSTestData/R6_noCRS"
     #inFolder = "H:/FSTestData/R6_hasCRS"
     #inFolder = "T:/FS/Reference/RSImagery/ProcessedData/r06/R06_DRM_Deliverables/PointCloud/OKW_2021_MinerCreek/1_LAZ/"
-    #pattern = "*.copc.laz"
-    pattern = "*.laz"
+    pattern = "*.copc.laz"
+    #pattern = "*.laz"
     assets = [fn.as_posix() for fn in Path(inFolder).glob(pattern)]
 
     # rockyweb is VERY slow, tested this with just 3 files and it took 10+ minutes to read the headers
@@ -287,7 +287,7 @@ if testnum() == 6:      # only run if asked
     cat = assetCatalog(inFolder, pattern, testsrs=True)
     #cat = assetCatalog(baseURL, pattern, scanheaders=True, href_asis=True)
     
-    cat.print(srs=True)
+    cat.print(srs=False)
 
     #cat.to_file("assets.parquet")
     #cat.to_file("assets.shp")
