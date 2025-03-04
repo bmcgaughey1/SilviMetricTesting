@@ -284,7 +284,22 @@ if testnum() == 6:      # only run if asked
     
     #cat = assetCatalog("", "", assets=[baseURL])
     #cat = assetCatalog(inFolder, pattern, assets=assets)
-    cat = assetCatalog(inFolder, pattern, testsrs=True)
+    #cat = assetCatalog(inFolder, pattern, testsrs=True)
+
+    # for ept data sources, provide empty strings for base and pattern, URLs for ept.json files as a list of assets,
+    # and set assettype to 'ept'. The ept.json file will be read with PDAL quickinfo to get minimal header information.
+    # Then the header of the root volume file (0-0-0-0.laz) will be read to get more information.
+    #
+    # For some servers, you may be able to provide the base URL in base and 'ept.json' in pattern (with assettype = 'ept').
+    # For s3, this won't work because you can't get a directory listing using a get request.
+    assets = [
+        "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/WI_Oshkosh_3Rivers_FondDuLac_TL_2018/ept.json",
+        "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/NM_SouthCentral_Fort_Sill_TL_2018/ept.json"
+              ]
+
+    cat = assetCatalog("", "", assets, assettype='ept')
+    # doesn't work for s3: cat = assetCatalog("https://s3-us-west-2.amazonaws.com/usgs-lidar-public/WI_Oshkosh_3Rivers_FondDuLac_TL_2018", "ept.json", assettype='ept')
+
     #cat = assetCatalog(baseURL, pattern, scanheaders=True, href_asis=True)
     
     cat.print(srs=False)

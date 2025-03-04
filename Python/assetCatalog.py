@@ -103,7 +103,7 @@ class assetCatalog:
         self.assets = assets
         """List of filenames/URLs"""
         self.assettype = assettype
-        """Type of asset: 'points' or 'raster'"""
+        """Type of asset: 'points', 'ept' or 'raster'"""
         self.overallbounds = overallbounds
         """Overall bounding box covering all assets"""
         self.totalpoints = totalpoints
@@ -170,7 +170,7 @@ class assetCatalog:
         Pretty-print catalog assets.
         """
         if self.has_assets():
-            print(f"Catalog of: {self.base} matching {self.pattern}")
+            print(f"Catalog of: '{self.base}' matching '{self.pattern}'")
             print(f"Overall bounding box: {self.overallbounds}")
             print(f"Total number of points: {self.totalpoints}")
             if srs: print(f"Coordinate system information: {self.srs}")
@@ -308,8 +308,6 @@ class assetCatalog:
             tassets = self.__list_assets()
         else:
             tassets = self.assets
-#https://www.google.com/search?q=get+remote+file+size+python&sca_esv=74940b13bb8c626e&ei=eTLGZ-_aNbSiptQPluOooAY&ved=0ahUKEwiv-9D9_-6LAxU0kYkEHZYxCmQQ4dUDCBA&uact=5&oq=get+remote+file+size+python&gs_lp=Egxnd3Mtd2l6LXNlcnAiG2dldCByZW1vdGUgZmlsZSBzaXplIHB5dGhvbjIGEAAYCBgeMggQABiiBBiJBTIFEAAY7wVI4R1QpRRYwxtwAXgBkAEAmAFdoAHyA6oBATe4AQPIAQD4AQGYAgegAsMDwgIKEAAYsAMY1gQYR8ICDRAAGIAEGLADGEMYigXCAgcQABiABBgNwgIIEAAYBxgIGB7CAgYQABgNGB7CAggQABgFGA0YHsICCBAAGAgYDRgemAMAiAYBkAYJkgcBN6AH4Sc&sclient=gws-wiz-serp
-#https://www.google.com/search?q=get+file+size+python&sca_esv=74940b13bb8c626e&source=hp&ei=cjLGZ-jbB77C0PEPmr7viAM&iflsig=ACkRmUkAAAAAZ8ZAgqWHR9PvEX_Y5WLatYHnESR6-_d-&ved=0ahUKEwjo3Pf5_-6LAxU-ITQIHRrfGzEQ4dUDCBo&uact=5&oq=get+file+size+python&gs_lp=Egdnd3Mtd2l6IhRnZXQgZmlsZSBzaXplIHB5dGhvbjIFEAAYgAQyBRAAGIAEMgYQABgWGB4yBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHkioMlAAWJ0scAB4AJABAJgBeaABlwuqAQQxOC4yuAEDyAEA-AEBmAIUoALiC8ICCxAAGIAEGLEDGIMBwgIREC4YgAQYsQMY0QMYgwEYxwHCAg4QLhiABBixAxiDARiKBcICDhAAGIAEGLEDGIMBGIoFwgIIEAAYgAQYsQPCAgsQLhiABBixAxiDAcICCxAuGIAEGLEDGNQCwgILEC4YgAQYxwEYrwHCAgsQLhiABBjRAxjHAcICCBAuGIAEGLEDwgIOEC4YgAQYsQMY0QMYxwHCAgUQLhiABMICERAuGIAEGLEDGIMBGMcBGK8BmAMAkgcEMTguMqAHuqkB&sclient=gws-wiz
 
         # use PDAL quickinfo to get bounding box, srs, and number of points
         if len(tassets) and self.scanheaders:
@@ -328,6 +326,7 @@ class assetCatalog:
                         srs = json.dumps(qi['metadata'][reader.type]['srs']['json'])
                     except:
                         srs = ""
+
                     b = Bounds(  float(json.dumps(qi['metadata'][reader.type]['minx']))
                                , float(json.dumps(qi['metadata'][reader.type]['miny']))
                                , float(json.dumps(qi['metadata'][reader.type]['maxx']))
@@ -340,21 +339,69 @@ class assetCatalog:
                     point_record_format = int(json.dumps(qi['metadata'][reader.type]['dataformat_id']))
                     major_version = int(json.dumps(qi['metadata'][reader.type]['major_version']))
                     minor_version = int(json.dumps(qi['metadata'][reader.type]['minor_version']))
+
+                    self.assets.append(assetInfo(ta, b, np, srs
+                                                , compressed
+                                                , copc
+                                                , creation_doy
+                                                , creation_year
+                                                , point_record_format
+                                                , major_version
+                                                , minor_version))
+                elif self.assettype == 'ept':
+                    reader = pdal.Reader(ta)
+                    p = reader.pipeline()
+                    qi = p.quickinfo[reader.type]
+                    #print(json.dumps(qi, indent = 4))
+                    try:
+                        srs = json.dumps(qi['srs']['json'])
+                    except:
+                        srs = ""
+
+                    b = Bounds.from_string((json.dumps(qi['bounds'])))
+                    np = int(json.dumps(qi['num_points']))
+
+                    # attempt to read root volume point tile
+                    # if this fails, add minimal info for asset...bounds and total number of points
+                    tap = ta.replace("ept.json", "ept-data/0-0-0-0.laz")
+
+                    reader = pdal.Reader(tap)
+                    reader._options['count'] = 0
+                    p = pdal.Pipeline([reader])
+                    try:
+                        p.execute()
+
+                        qi = p.metadata
+                        #print(json.dumps(qi, indent = 4))
+                        # b = Bounds(  float(json.dumps(qi['metadata'][reader.type]['minx']))
+                        #            , float(json.dumps(qi['metadata'][reader.type]['miny']))
+                        #            , float(json.dumps(qi['metadata'][reader.type]['maxx']))
+                        #            , float(json.dumps(qi['metadata'][reader.type]['maxy'])))
+                        # np = int(json.dumps(qi['metadata'][reader.type]['count']))
+                        compressed = bool(json.dumps(qi['metadata'][reader.type]['compressed']))
+                        copc = bool(json.dumps(qi['metadata'][reader.type]['copc']))
+                        creation_doy = int(json.dumps(qi['metadata'][reader.type]['creation_doy']))
+                        creation_year = int(json.dumps(qi['metadata'][reader.type]['creation_year']))
+                        point_record_format = int(json.dumps(qi['metadata'][reader.type]['dataformat_id']))
+                        major_version = int(json.dumps(qi['metadata'][reader.type]['major_version']))
+                        minor_version = int(json.dumps(qi['metadata'][reader.type]['minor_version']))
+                        self.assets.append(assetInfo(ta, b, np, srs
+                                                    , compressed
+                                                    , copc
+                                                    , creation_doy
+                                                    , creation_year
+                                                    , point_record_format
+                                                    , major_version
+                                                    , minor_version))
+                    except:
+                        self.assets.append(assetInfo(ta, b, np, srs))
+
                 else:
                     raise ValueError(f"{self.assettype} type not supported!")
                 
                 # if len(srs) == 0:
                 #     raise Exception(f"Asset {ta} does not have srs")
                 
-                self.assets.append(assetInfo(ta, b, np, srs
-                                             , compressed
-                                             , copc
-                                             , creation_doy
-                                             , creation_year
-                                             , point_record_format
-                                             , major_version
-                                             , minor_version))
-
             self.overallbounds = self.update_overall_bounds()
             self.srs = self.assets[0].srs
             self.__sum_points()
@@ -375,6 +422,8 @@ class assetCatalog:
         Build a list of assets including srs and bounding box. Uses PDAL
         quickinfo to get header information so the entire file header is
         not available.
+
+        DEPRECATED...do not use
         
         :raises ValueError: unsupported asset type
         :raises Exception: assest has no coordinate system information
@@ -397,6 +446,7 @@ class assetCatalog:
                     reader = pdal.Reader(ta)
                     p = reader.pipeline()
                     qi = p.quickinfo[reader.type]
+                    #print(json.dumps(qi, indent = 4))
                     try:
                         srs = json.dumps(qi['srs']['json'])
                     except:
@@ -426,7 +476,7 @@ class assetCatalog:
 
         return len(self.assets)
 
-    def __is_base_remote(self) -> bool:
+    def __base_is_remote(self) -> bool:
         """
         Checks to see if base resolves to a remote host by looking for
         'http' in base. Test is not infalliable.
@@ -448,13 +498,14 @@ class assetCatalog:
             List of asset URLs or file specifiers. Empty list if no matching files found.
         """
         # see if we have URL with http or https
-        if self.__is_base_remote():
+        if self.__base_is_remote():
             warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
             def listFD(url, ext=''):
                 if url.endswith("/"):
                     url = url[:-1]
 
                 page = requests.get(url).text
+
                 soup = BeautifulSoup(page, 'html.parser')
 
                 if not self.href_asis:
