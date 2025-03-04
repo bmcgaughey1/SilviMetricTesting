@@ -2,34 +2,33 @@
   "pipeline":
   [
     {
-      "filename": "H:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2133n2147.copc.laz",
-      "tag": "readers_copc1",
-      "type": "readers.copc"
+      "filename": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/WI_Oshkosh_3Rivers_FondDuLac_TL_2018/ept.json",
+      "tag": "readers_ept1",
+      "type": "readers.ept"
     },
     {
       "expression": "(((Classification != 7) && (Classification != 9) && (Classification != 18)) && (Synthetic != 1) && (Withheld != 1))",
       "inputs":
       [
-        "readers_copc1"
+        "readers_ept1"
       ],
       "tag": "filters_expression1",
       "type": "filters.expression"
     },
     {
+      "allow_extrapolation": "true",
       "inputs":
       [
         "filters_expression1"
       ],
-      "raster": "C:/Users/bmcgaughey/SilviMetricTesting/Python/../TestOutput/__grnd__.vrt",
-      "tag": "filters_hag_dem1",
-      "type": "filters.hag_dem",
-      "zero_ground": "false"
+      "tag": "filters_hag_delaunay1",
+      "type": "filters.hag_delaunay"
     },
     {
       "expression": "HeightAboveGround >= 2.0 && HeightAboveGround <= 150.0",
       "inputs":
       [
-        "filters_hag_dem1"
+        "filters_hag_delaunay1"
       ],
       "tag": "filters_expression2",
       "type": "filters.expression"

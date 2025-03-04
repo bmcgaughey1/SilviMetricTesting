@@ -92,15 +92,15 @@ plot(diff)
 
 
 # canopy height model
-folder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/Plumas_CHM_pic_vrt_tifs/"
+folder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/EPT_Metrics_delaunay_tifs/"
 file <- "m_Z_max.tif"
 r <- rast(paste0(folder, file))
 plot(r)
 
-writeDTM(r, "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/Plumas_CHM_pic_vrt_tifs/CHM.dtm"
+writeDTM(r, "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/EPT_Metrics_delaunay_tifs/ht_max.dtm"
          , xyunits = "M"
          , zunits = "M"
-         , coordsys = 1
-         , zone = 10
-         , horizdatum = 2
-         , vertdatum = 2)
+         , coordsys = 0
+         , zone = 0
+         , horizdatum = 0
+         , vertdatum = 0)

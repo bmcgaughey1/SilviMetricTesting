@@ -290,7 +290,7 @@ if testnum() == 6:      # only run if asked
     cat.print(srs=False)
 
     #cat.to_file("assets.parquet")
-    #cat.to_file("assets.shp")
+    cat.to_file("assets.shp")
     #cat.to_file("assets.geojson")
     #cat.to_file("assets.gpkg")
 

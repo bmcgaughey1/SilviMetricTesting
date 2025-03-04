@@ -233,17 +233,22 @@ class assetCatalog:
         """
         if self.is_valid():
             data = {
-                'filename': [asset.filename for asset in self.assets],
+                'filespec': [asset.filename for asset in self.assets],
                 'numpoints': [asset.numpoints for asset in self.assets],
-                'geometry': [box(asset.bounds.minx, asset.bounds.miny, asset.bounds.maxx, asset.bounds.maxy) for asset in self.assets]
+                'minx': [asset.bounds.minx for asset in self.assets],
+                'miny': [asset.bounds.maxx for asset in self.assets],
+                'maxx': [asset.bounds.miny for asset in self.assets],
+                'maxy': [asset.bounds.maxy for asset in self.assets],
+                'geometry': [box(asset.bounds.minx, asset.bounds.miny, asset.bounds.maxx, asset.bounds.maxy) for asset in self.assets],
+                'numpoints': [asset.numpoints for asset in self.assets],
+                'compressed': [asset.compressed for asset in self.assets],
+                'copc': [asset.copc for asset in self.assets],
+                'creation_doy': [asset.creation_doy for asset in self.assets],
+                'creation_year': [asset.creation_year for asset in self.assets],
+                'point_record_format': [asset.point_record_format for asset in self.assets],
+                'major_version': [asset.major_version for asset in self.assets],
+                'minor_version': [asset.minor_version for asset in self.assets]
             }
-                                            #  , compressed
-                                            #  , copc
-                                            #  , creation_doy
-                                            #  , creation_year
-                                            #  , point_record_format
-                                            #  , major_version
-                                            #  , minor_version))
 
             gdf = gpd.GeoDataFrame(data, crs=self.srs)
 
