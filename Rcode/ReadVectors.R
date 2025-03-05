@@ -9,8 +9,9 @@ file <- "assets.gpkg"
 #folder <- "G:/R_Stuff/PlotClipping/KyPtCloudTileIndex/"
 #file <- "Kentucky_5k_PointCloudGrid.shp"
 
-v <- st_read(paste0(folder, file))
+ov <- st_read(paste0(folder, file), layer = "overall")
+v <- st_read(paste0(folder, file), layer = "assets")
 #plot(v)
 
 # this won't show anything in RStudio viewer. Export to HTML to see map.
-mapview(v)
+mapview(list(ov, v))

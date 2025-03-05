@@ -17,15 +17,18 @@ from pathlib import Path
 import pdal
 import json
 import pyproj
+from datetime import datetime
 
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 import requests
 import warnings
+import pystac
+from pystac.extensions import pointcloud
 
 from silvimetric import Bounds
 
 import geopandas as gpd
-from shapely.geometry import box
+from shapely.geometry import mapping, box
 
 ###############################################################################    
 ############################  C L A S S E S  ##################################
@@ -222,6 +225,7 @@ class assetCatalog:
     
     def to_file(self
                , filename: str
+               , content: str = 'assets'            # 'assets', 'overall', 'all'
                ) -> bool:
         """
         Write catalog to file. Supports geoparquet, shapfile, geopackage, geojson and json (written as geojson).
@@ -232,6 +236,17 @@ class assetCatalog:
             bool, True if successful
         """
         if self.is_valid():
+            odata = {
+                'base': [self.base],
+                'pattern': [self.pattern],
+                'assettype': [self.assettype],
+                'totalpoints': [self.totalpoints],
+                'minx': [self.overallbounds.minx],
+                'miny': [self.overallbounds.miny],
+                'maxx': [self.overallbounds.maxx],
+                'maxy': [self.overallbounds.maxy],
+                'geometry': [box(self.overallbounds.minx, self.overallbounds.miny, self.overallbounds.maxx, self.overallbounds.maxy)]
+            }
             data = {
                 'filespec': [asset.filename for asset in self.assets],
                 'numpoints': [asset.numpoints for asset in self.assets],
@@ -239,7 +254,6 @@ class assetCatalog:
                 'miny': [asset.bounds.maxx for asset in self.assets],
                 'maxx': [asset.bounds.miny for asset in self.assets],
                 'maxy': [asset.bounds.maxy for asset in self.assets],
-                'geometry': [box(asset.bounds.minx, asset.bounds.miny, asset.bounds.maxx, asset.bounds.maxy) for asset in self.assets],
                 'numpoints': [asset.numpoints for asset in self.assets],
                 'compressed': [asset.compressed for asset in self.assets],
                 'copc': [asset.copc for asset in self.assets],
@@ -247,19 +261,60 @@ class assetCatalog:
                 'creation_year': [asset.creation_year for asset in self.assets],
                 'point_record_format': [asset.point_record_format for asset in self.assets],
                 'major_version': [asset.major_version for asset in self.assets],
-                'minor_version': [asset.minor_version for asset in self.assets]
+                'minor_version': [asset.minor_version for asset in self.assets],
+                'geometry': [box(asset.bounds.minx, asset.bounds.miny, asset.bounds.maxx, asset.bounds.maxy) for asset in self.assets]
             }
 
+            ogdf = gpd.GeoDataFrame(odata, crs=self.srs)
             gdf = gpd.GeoDataFrame(data, crs=self.srs)
 
             if filename.lower().endswith(".parquet"):
-                gdf.to_parquet(filename)
+                if content.lower() == 'assets':
+                    gdf.to_parquet(filename)
+                else:
+                    ogdf.to_parquet(filename)
             elif filename.lower().endswith(".shp"):
-                gdf.to_file(filename, crs = self.srs)
+                if content.lower() == 'assets':
+                    gdf.to_file(filename, crs = self.srs)
+                else:
+                    ogdf.to_file(filename, crs = self.srs)
             elif filename.lower().endswith(".geojson") or filename.lower().endswith(".json"):
-                gdf.to_file(filename, driver = 'geoJSON', crs = self.srs)
+                if content.lower() == 'assets':
+                    gdf.to_file(filename, driver = 'geoJSON', crs = self.srs)
+                else:
+                    ogdf.to_file(filename, driver = 'geoJSON', crs = self.srs)
             elif filename.lower().endswith(".gpkg"):
-                gdf.to_file(filename, driver = 'GPKG', layer = 'assets', crs = self.srs)
+                if 'all' in content.lower():
+                    ogdf.to_file(filename, driver = 'GPKG', layer = 'overall', crs = self.srs)
+                if content.lower() == 'assets' or content.lower() == 'all':
+                    gdf.to_file(filename, driver = 'GPKG', layer = 'assets', crs = self.srs)
+            elif filename.lower().endswith(".stac"):
+                # Create a STAC Catalog...not working!@#$%^&*
+                catalog = pystac.Catalog(
+                    id = "mycatalog",
+                    description = "Point data assets")
+
+                # Iterate through the GeoDataFrame and create STAC Items
+                for index, row in gdf.iterrows():
+                    # Create a STAC Item
+                    item = pystac.Item(
+                        id=row['filespec'],
+                        geometry=mapping(row['geometry']),
+                        bbox=mapping(row['geometry']),
+                        datetime=datetime.now(),
+                        properties={'filespec': row['filespec']}
+                    )
+
+                    # Add the Item to the Catalog
+                    catalog.add_item(item)
+
+                    item.add_asset("pointcloud", asset=pystac.Asset(href=row['filespec'], media_type='LAS'))
+                    
+                    print(json.dumps(item.to_dict(), indent=4))
+
+                # Save the catalog to a file
+                catalog.normalize_hrefs(self.base)
+                catalog.save(catalog_type=pystac.CatalogType.SELF_CONTAINED, dest_href = filename)
             else:
                 raise ValueError(f"Format not supported: {filename}")
             return True
