@@ -265,8 +265,12 @@ class assetCatalog:
                 'geometry': [box(asset.bounds.minx, asset.bounds.miny, asset.bounds.maxx, asset.bounds.maxy) for asset in self.assets]
             }
 
-            ogdf = gpd.GeoDataFrame(odata, crs=self.srs)
-            gdf = gpd.GeoDataFrame(data, crs=self.srs)
+            if self.srs != "":
+                ogdf = gpd.GeoDataFrame(odata, crs=self.srs)
+                gdf = gpd.GeoDataFrame(data, crs=self.srs)
+            else:
+                ogdf = gpd.GeoDataFrame(odata, crs=None)
+                gdf = gpd.GeoDataFrame(data, crs=None)
 
             if filename.lower().endswith(".parquet"):
                 if content.lower() == 'assets':
@@ -364,7 +368,7 @@ class assetCatalog:
         else:
             tassets = self.assets
 
-        # use PDAL quickinfo to get bounding box, srs, and number of points
+        # use PDAL to get metadata
         if len(tassets) and self.scanheaders:
             self.assets = []
             for ta in tassets:
@@ -382,13 +386,16 @@ class assetCatalog:
                     except:
                         srs = ""
 
+                    # deal with empty json for srs
+                    if srs == "{}": srs = ""
+
                     b = Bounds(  float(json.dumps(qi['metadata'][reader.type]['minx']))
                                , float(json.dumps(qi['metadata'][reader.type]['miny']))
                                , float(json.dumps(qi['metadata'][reader.type]['maxx']))
                                , float(json.dumps(qi['metadata'][reader.type]['maxy'])))
                     np = int(json.dumps(qi['metadata'][reader.type]['count']))
-                    compressed = bool(json.dumps(qi['metadata'][reader.type]['compressed']))
-                    copc = bool(json.dumps(qi['metadata'][reader.type]['copc']))
+                    compressed = (json.dumps(qi['metadata'][reader.type]['compressed'])) == "true"
+                    copc = (json.dumps(qi['metadata'][reader.type]['copc'])) == "true"
                     creation_doy = int(json.dumps(qi['metadata'][reader.type]['creation_doy']))
                     creation_year = int(json.dumps(qi['metadata'][reader.type]['creation_year']))
                     point_record_format = int(json.dumps(qi['metadata'][reader.type]['dataformat_id']))
@@ -413,6 +420,9 @@ class assetCatalog:
                     except:
                         srs = ""
 
+                    # deal with empty json for srs
+                    if srs == "{}": srs = ""
+
                     b = Bounds.from_string((json.dumps(qi['bounds'])))
                     np = int(json.dumps(qi['num_points']))
 
@@ -433,8 +443,8 @@ class assetCatalog:
                         #            , float(json.dumps(qi['metadata'][reader.type]['maxx']))
                         #            , float(json.dumps(qi['metadata'][reader.type]['maxy'])))
                         # np = int(json.dumps(qi['metadata'][reader.type]['count']))
-                        compressed = bool(json.dumps(qi['metadata'][reader.type]['compressed']))
-                        copc = bool(json.dumps(qi['metadata'][reader.type]['copc']))
+                        compressed = (json.dumps(qi['metadata'][reader.type]['compressed'])) == "true"
+                        copc = (json.dumps(qi['metadata'][reader.type]['copc'])) == "true"
                         creation_doy = int(json.dumps(qi['metadata'][reader.type]['creation_doy']))
                         creation_year = int(json.dumps(qi['metadata'][reader.type]['creation_year']))
                         point_record_format = int(json.dumps(qi['metadata'][reader.type]['dataformat_id']))
@@ -506,6 +516,10 @@ class assetCatalog:
                         srs = json.dumps(qi['srs']['json'])
                     except:
                         srs = ""
+
+                    # deal with empty json for srs
+                    if srs == "{}": srs = ""
+
                     b = Bounds.from_string((json.dumps(qi['bounds'])))
                     np = int(json.dumps(qi['num_points']))
                 else:

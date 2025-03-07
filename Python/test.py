@@ -313,3 +313,13 @@ if testnum() == 6:      # only run if asked
     #if cat.is_valid():
     #    for asset in cat.assets:
     #        print(asset.filename)
+
+if testnum() == 7:
+    inFolder = "T:/FS/Reference/RSImagery/ProcessedData/r06/R06_DRM_Deliverables/PointCloud/COL_2008_Sherman_Pass_feet/1_LAZ"
+    pattern = "*.laz"
+    fileName = "COL_2008_48118E2101_Sherman_Pass.laz"
+    
+    cat = assetCatalog(inFolder, pattern)
+    cat.print(details = False)
+    cat.to_file("assets.gpkg", content='all')
+
