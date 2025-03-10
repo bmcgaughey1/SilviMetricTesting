@@ -8,6 +8,7 @@ import datetime
 from shutil import rmtree
 from osgeo import gdal, ogr, osr
 import pyproj
+import pandas
 from osgeo.osr import SpatialReference
 
 import planetary_computer as pc
@@ -323,3 +324,43 @@ if testnum() == 7:
     cat.print(details = False)
     cat.to_file("assets.gpkg", content='all')
 
+# read folder list for T: drive and build index files
+if testnum() == 8:
+    slashString = "_][_"
+    rootPath = "T:\\FS\\Reference\\RSImagery\\ProcessedData\\r06\\R06_DRM_Deliverables\\PointCloud"
+
+    # copied file to same folder with code. Didn't like having file in C:\users
+    csvList = pandas.read_csv(Path("TDrive_R6_FileList.csv"))
+
+    # add column with the sum of the data type flags...non-zero indicates folder has target file types
+    csvList['typeSum'] = csvList['*.laz'] + csvList['*.las'] + csvList['*.lda'] + csvList['ept.json'] + csvList['*.copc'] + csvList['*.copc.laz']
+    csvList['indexName'] = ""
+
+    # sort by *.laz and *.las columns, then by folder name
+    csvList.sort_values(['*.laz', '*.las', 'Folder'], ascending = [False, False, True])
+
+    # drop rows that don't have target file types
+    finalList = csvList[(csvList['typeSum'] > 0)]
+
+    finalList = finalList.reset_index(drop = True)
+
+    # manipulate folder name to get name for index
+    # idea is to strip off root path, then replace slashes with "__"
+    # root path...Path() will replace slashes and delete training slash
+
+    finalList.loc[:, 'indexName'] = finalList.loc[:, 'Folder'].str.replace(rootPath, "").str.replace("\\", slashString).str.lstrip(slashString)
+    
+    # indexName has the folder name...iterate over rows
+    for index, row in finalList.iterrows():
+        print("Scanning:", row['Folder'], "to produce index:", row['indexName'], "...", end = "")
+
+        # do index
+
+        print("Done!\n")
+
+        if index > 30:
+            break
+
+    #pandas.set_option('display.max_rows', 25)
+    #print(finalList)
+    #print(finalList.iloc[0, 8])
