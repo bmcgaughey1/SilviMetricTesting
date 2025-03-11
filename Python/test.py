@@ -326,8 +326,14 @@ if testnum() == 7:
 
 # read folder list for T: drive and build index files
 if testnum() == 8:
+    indexFormat = ".gpkg"
     slashString = "_][_"
     rootPath = "T:\\FS\\Reference\\RSImagery\\ProcessedData\\r06\\R06_DRM_Deliverables\\PointCloud"
+
+    def doIndex(root: str, pattern: str, indexBaseName: str, indexExt: str):
+        cat = assetCatalog(root, pattern)
+        if cat.is_valid():
+            cat.to_file(indexBaseName + indexExt, content = 'all' if indexExt.lower() == '.gpkg' else 'assets')
 
     # copied file to same folder with code. Didn't like having file in C:\users
     csvList = pandas.read_csv(Path("TDrive_R6_FileList.csv"))
@@ -342,6 +348,7 @@ if testnum() == 8:
     # drop rows that don't have target file types
     finalList = csvList[(csvList['typeSum'] > 0)]
 
+    # reset index
     finalList = finalList.reset_index(drop = True)
 
     # manipulate folder name to get name for index
@@ -353,12 +360,30 @@ if testnum() == 8:
     # indexName has the folder name...iterate over rows
     for index, row in finalList.iterrows():
         print("Scanning:", row['Folder'], "to produce index:", row['indexName'], "...", end = "")
+        sys.stdout.flush()          # force print
 
         # do index
+        if row['*.laz'] == 1:
+            doIndex(row['Folder'], "*.laz", row['indexName'] + "__LAZ", indexFormat)
+
+        if row['*.las'] == 1:
+            doIndex(row['Folder'], "*.las", row['indexName'] + "__LAS", indexFormat)
+
+        if row['*.lda'] == 1:
+            doIndex(row['Folder'], "*.lda", row['indexName'] + "__LDA", indexFormat)
+
+        if row['ept.json'] == 1:
+            doIndex(row['Folder'], "ept.json", row['indexName'] + "__EPT", indexFormat)
+
+        if row['*.copc'] == 1:
+            doIndex(row['Folder'], "*.copc", row['indexName'] + "__COPC", indexFormat)
+
+        if row['*.copc.laz'] == 1:
+            doIndex(row['Folder'], "*.laz", row['indexName'] + "__LAZ", indexFormat)
 
         print("Done!\n")
 
-        if index > 30:
+        if index >= 3:
             break
 
     #pandas.set_option('display.max_rows', 25)

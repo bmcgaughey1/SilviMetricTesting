@@ -90,6 +90,7 @@ class assetCatalog:
                  , assettype: str = "points"
                  , overallbounds: Bounds = None
                  , totalpoints: int = 0
+                 , assetcount: int = 0
                  , srs: str = ""
                  , testsrs: bool = True
                  , testtype: str = "string"
@@ -111,6 +112,8 @@ class assetCatalog:
         """Overall bounding box covering all assets"""
         self.totalpoints = totalpoints
         """Total number of points in all assets"""
+        self.assetcount = assetcount
+        """Number of assets"""
         self.srs = srs
         """srs for asset collection"""
         self.testsrs = testsrs
@@ -129,6 +132,8 @@ class assetCatalog:
         # scan assets
         if not self.__scan_assets():
             raise Exception(f"No assets found in {base} matching {pattern}")
+        
+        self.assetcount = len(self.assets)
 
     def is_complete(self) -> bool:
         """
@@ -149,7 +154,7 @@ class assetCatalog:
         """
         Test to see if catalog has assets.
         """
-        if len(self.assets) > 0:
+        if self.assetcount > 0:
             if isinstance(self.assets[0], assetInfo):
                 return True
             
@@ -177,7 +182,7 @@ class assetCatalog:
             print(f"Overall bounding box: {self.overallbounds}")
             print(f"Total number of points: {self.totalpoints}")
             if srs: print(f"Coordinate system information: {self.srs}")
-            print(f"Number of assets: {len(self.assets)}")
+            print(f"Number of assets: {self.assetcount}")
 
             if filename or bounds or srs:
                 cnt = 1
@@ -204,7 +209,7 @@ class assetCatalog:
         """
         Update the overall bounding box for the assets in catalog.
         """
-        if self.is_valid():
+        if len(self.assets) > 0:
             bb = Bounds(sys.float_info.max, sys.float_info.max, -sys.float_info.max, -sys.float_info.max)
 
             # Update overall bounds with asset bounds
@@ -240,7 +245,9 @@ class assetCatalog:
                 'base': [self.base],
                 'pattern': [self.pattern],
                 'assettype': [self.assettype],
-                'totalpoints': [self.totalpoints],
+                'assetcount': [self.assetcount],
+                'totalpointcount': [self.totalpoints],
+                'hasSRS': [self.srs != ""],
                 'minx': [self.overallbounds.minx],
                 'miny': [self.overallbounds.miny],
                 'maxx': [self.overallbounds.maxx],
@@ -249,12 +256,7 @@ class assetCatalog:
             }
             data = {
                 'filespec': [asset.filename for asset in self.assets],
-                'numpoints': [asset.numpoints for asset in self.assets],
-                'minx': [asset.bounds.minx for asset in self.assets],
-                'miny': [asset.bounds.maxx for asset in self.assets],
-                'maxx': [asset.bounds.miny for asset in self.assets],
-                'maxy': [asset.bounds.maxy for asset in self.assets],
-                'numpoints': [asset.numpoints for asset in self.assets],
+                'pointcount': [asset.numpoints for asset in self.assets],
                 'compressed': [asset.compressed for asset in self.assets],
                 'copc': [asset.copc for asset in self.assets],
                 'creation_doy': [asset.creation_doy for asset in self.assets],
@@ -262,6 +264,10 @@ class assetCatalog:
                 'point_record_format': [asset.point_record_format for asset in self.assets],
                 'major_version': [asset.major_version for asset in self.assets],
                 'minor_version': [asset.minor_version for asset in self.assets],
+                'minx': [asset.bounds.minx for asset in self.assets],
+                'miny': [asset.bounds.maxx for asset in self.assets],
+                'maxx': [asset.bounds.miny for asset in self.assets],
+                'maxy': [asset.bounds.maxy for asset in self.assets],
                 'geometry': [box(asset.bounds.minx, asset.bounds.miny, asset.bounds.maxx, asset.bounds.maxy) for asset in self.assets]
             }
 
@@ -590,7 +596,7 @@ class assetCatalog:
 
     def __sum_points(self) -> int:
         self.totalpoints = 0
-        if self.is_valid():
+        if len(self.assets) > 0:
             for asset in self.assets:
                 self.totalpoints = self.totalpoints + asset.numpoints
 
