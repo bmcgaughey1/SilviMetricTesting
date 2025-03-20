@@ -359,8 +359,7 @@ class assetCatalog:
     def __scan_assets(self) -> int:
         """
         Build a list of assets including srs and bounding box. Uses PDAL
-        quickinfo to get header information so the entire file header is
-        not available.
+        to get header information.
         
         :raises ValueError: unsupported asset type
         :raises Exception: assest has no coordinate system information
