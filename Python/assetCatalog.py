@@ -40,6 +40,7 @@ class assetInfo:
     """
     def __init__(self
                  , filename: str = ""
+                 , filesize: int = -1
                  , bounds: Bounds = None
                  , numpoints: int = 0
                  , srs: str = ""
@@ -53,6 +54,8 @@ class assetInfo:
                  ):
         self.filename = filename
         """asset filename or URL"""
+        self.filesize = filesize
+        """size of asset in bytes"""
         self.bounds = bounds
         """bounding box for asset...comes from point file header"""
         self.numpoints = numpoints
@@ -88,6 +91,7 @@ class assetCatalog:
                  , pattern: str
                  , assets: list[str] = []
                  , assettype: str = "points"
+                 , assetsize: int = -1
                  , overallbounds: Bounds = None
                  , totalpoints: int = 0
                  , assetcount: int = 0
@@ -108,6 +112,8 @@ class assetCatalog:
         """List of filenames/URLs"""
         self.assettype = assettype
         """Type of asset: 'points', 'ept' or 'raster'"""
+        self.assetsize = assetsize
+        """Total size of all asset files in bytes"""
         self.overallbounds = overallbounds
         """Overall bounding box covering all assets"""
         self.totalpoints = totalpoints
@@ -179,6 +185,7 @@ class assetCatalog:
         """
         if self.has_assets():
             print(f"Catalog of: '{self.base}' matching '{self.pattern}'")
+            print(f"Total size: {self.assetsize / 1024 / 1024} Mb")
             print(f"Overall bounding box: {self.overallbounds}")
             print(f"Total number of points: {self.totalpoints}")
             if srs: print(f"Coordinate system information: {self.srs}")
@@ -189,6 +196,7 @@ class assetCatalog:
                 for asset in self.assets:
                     print(f"   Asset {cnt}:")
                     if filename: print(f"      {asset.filename}")
+                    print(f"      size: {asset.filesize / 1024} Kb")
                     if bounds: print(f"      bounds: {asset.bounds}")
                     if numpoints: print(f"      numpoints: {asset.numpoints}")
                     if assetsrs: print(f"      srs: {asset.srs}")
@@ -246,6 +254,7 @@ class assetCatalog:
                 'pattern': [self.pattern],
                 'assettype': [self.assettype],
                 'assetcount': [self.assetcount],
+                'assetsize': [self.assetsize],
                 'totalpointcount': [self.totalpoints],
                 'hasSRS': [self.srs != ""],
                 'minx': [self.overallbounds.minx],
@@ -256,6 +265,7 @@ class assetCatalog:
             }
             data = {
                 'filespec': [asset.filename for asset in self.assets],
+                'filesize': [asset.filesize for asset in self.assets],
                 'pointcount': [asset.numpoints for asset in self.assets],
                 'compressed': [asset.compressed for asset in self.assets],
                 'copc': [asset.copc for asset in self.assets],
@@ -377,6 +387,9 @@ class assetCatalog:
         if len(tassets) and self.scanheaders:
             self.assets = []
             for ta in tassets:
+                # get file size
+                filesize = self.__get_asset_size(ta)
+
                 # use PDAL to read file header (set count=0 in reader options)
                 # I don't know how this compares to quickinfo command but quickinfo doesn't read much information
                 if self.assettype == 'points':
@@ -407,7 +420,7 @@ class assetCatalog:
                     major_version = int(json.dumps(qi['metadata'][reader.type]['major_version']))
                     minor_version = int(json.dumps(qi['metadata'][reader.type]['minor_version']))
 
-                    self.assets.append(assetInfo(ta, b, np, srs
+                    self.assets.append(assetInfo(ta, filesize, b, np, srs
                                                 , compressed
                                                 , copc
                                                 , creation_doy
@@ -455,7 +468,7 @@ class assetCatalog:
                         point_record_format = int(json.dumps(qi['metadata'][reader.type]['dataformat_id']))
                         major_version = int(json.dumps(qi['metadata'][reader.type]['major_version']))
                         minor_version = int(json.dumps(qi['metadata'][reader.type]['minor_version']))
-                        self.assets.append(assetInfo(ta, b, np, srs
+                        self.assets.append(assetInfo(ta, filesize, b, np, srs
                                                     , compressed
                                                     , copc
                                                     , creation_doy
@@ -464,7 +477,7 @@ class assetCatalog:
                                                     , major_version
                                                     , minor_version))
                     except:
-                        self.assets.append(assetInfo(ta, b, np, srs))
+                        self.assets.append(assetInfo(ta, filesize, b, np, srs))
 
                 else:
                     raise ValueError(f"{self.assettype} type not supported!")
@@ -473,8 +486,13 @@ class assetCatalog:
                 #     raise Exception(f"Asset {ta} does not have srs")
                 
             self.overallbounds = self.update_overall_bounds()
-            self.srs = self.assets[0].srs
+            if len(self.assets) > 0:
+                self.srs = self.assets[0].srs
+            else:
+                self.srs = ""
             self.__sum_points()
+            self.__sum_sizes()
+
 
             if (self.testsrs):
                 self.srsmatch = self.__test_assets_srs(testtype = self.testtype)
@@ -511,6 +529,9 @@ class assetCatalog:
         if len(tassets) and self.scanheaders:
             self.assets = []
             for ta in tassets:
+                # get file size
+                filesize = self.__get_asset_size(ta)
+
                 # use PDAL python bindings to find the srs of our data...look at first asset
                 if self.assettype == 'points':
                     reader = pdal.Reader(ta)
@@ -533,17 +554,18 @@ class assetCatalog:
                 # if len(srs) == 0:
                 #     raise Exception(f"Asset {ta} does not have srs")
                 
-                self.assets.append(assetInfo(ta, b, np, srs))
+                self.assets.append(assetInfo(ta, filesize, b, np, srs))
 
             self.overallbounds = self.update_overall_bounds()
             self.srs = self.assets[0].srs
             self.__sum_points()
+            self.__sum_sizes()
 
             if (self.testsrs):
                 self.srsmatch = self.__test_assets_srs(testtype = self.testtype)
         elif len(tassets):
             for ta in tassets:
-                self.assets.append(assetInfo(ta, bounds = None, numpoints = 0, srs = ""))
+                self.assets.append(assetInfo(ta, filesize = -1, bounds = None, numpoints = 0, srs = ""))
 
             self.overallbounds = None
             self.totalpoints = 0
@@ -603,3 +625,41 @@ class assetCatalog:
         
         return 0
     
+    def __sum_sizes(self) -> int:
+        self.assetsize = 0
+        if len(self.assets) > 0:
+            for asset in self.assets:
+                self.assetsize = self.assetsize + asset.filesize
+
+            # check for negative sum...indicates files sizes not available for assets
+            if self.assetsize < 0:
+                self.assetsize = -1
+
+            return self.assetsize
+        
+        return -1
+    
+    def __get_asset_size(self, filename: str) -> int:
+        """
+        Retrieves the size of a remote file without downloading it or
+        gets the size of a local file.
+
+        Returns:
+            int: The size of the file in bytes, or -1 if the size cannot be determined.
+        """
+        if 'http' in filename.lower():
+            # remote file
+            try:
+                response = requests.head(filename)
+                response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+                file_size = int(response.headers.get('content-length', -1))
+            except requests.exceptions.RequestException as e:
+                file_size = -1
+        else:
+            # local file
+            try:
+                file_size = os.path.getsize(filename)
+            except:
+                file_size = -1
+        
+        return file_size
