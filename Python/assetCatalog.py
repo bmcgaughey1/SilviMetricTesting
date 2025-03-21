@@ -185,7 +185,7 @@ class assetCatalog:
         """
         if self.has_assets():
             print(f"Catalog of: '{self.base}' matching '{self.pattern}'")
-            print(f"Total size: {self.assetsize / 1024 / 1024} Mb")
+            print(f"Total size: {int(self.assetsize / 1024 / 1024)} Mb")
             print(f"Overall bounding box: {self.overallbounds}")
             print(f"Total number of points: {self.totalpoints}")
             if srs: print(f"Coordinate system information: {self.srs}")
@@ -196,7 +196,7 @@ class assetCatalog:
                 for asset in self.assets:
                     print(f"   Asset {cnt}:")
                     if filename: print(f"      {asset.filename}")
-                    print(f"      size: {asset.filesize / 1024} Kb")
+                    print(f"      size: {int(asset.filesize / 1024)} Kb")
                     if bounds: print(f"      bounds: {asset.bounds}")
                     if numpoints: print(f"      numpoints: {asset.numpoints}")
                     if assetsrs: print(f"      srs: {asset.srs}")
@@ -239,6 +239,7 @@ class assetCatalog:
     def to_file(self
                , filename: str
                , content: str = 'assets'            # 'assets', 'overall', 'all'
+               , engine: str = 'fiona'              # 'pyogrio' or 'fiona'
                ) -> bool:
         """
         Write catalog to file. Supports geoparquet, shapfile, geopackage, geojson and json (written as geojson).
@@ -295,19 +296,19 @@ class assetCatalog:
                     ogdf.to_parquet(filename)
             elif filename.lower().endswith(".shp"):
                 if content.lower() == 'assets':
-                    gdf.to_file(filename, crs = self.srs)
+                    gdf.to_file(filename, crs = self.srs, engine = engine)
                 else:
-                    ogdf.to_file(filename, crs = self.srs)
+                    ogdf.to_file(filename, crs = self.srs, engine = engine)
             elif filename.lower().endswith(".geojson") or filename.lower().endswith(".json"):
                 if content.lower() == 'assets':
-                    gdf.to_file(filename, driver = 'geoJSON', crs = self.srs)
+                    gdf.to_file(filename, driver = 'geoJSON', crs = self.srs, engine = engine)
                 else:
-                    ogdf.to_file(filename, driver = 'geoJSON', crs = self.srs)
+                    ogdf.to_file(filename, driver = 'geoJSON', crs = self.srs, engine = engine)
             elif filename.lower().endswith(".gpkg"):
                 if 'all' in content.lower():
-                    ogdf.to_file(filename, driver = 'GPKG', layer = 'overall', crs = self.srs)
+                    ogdf.to_file(filename, driver = 'GPKG', layer = 'overall', crs = self.srs, engine = engine)
                 if content.lower() == 'assets' or content.lower() == 'all':
-                    gdf.to_file(filename, driver = 'GPKG', layer = 'assets', crs = self.srs)
+                    gdf.to_file(filename, driver = 'GPKG', layer = 'assets', crs = self.srs, engine = engine)
             elif filename.lower().endswith(".stac"):
                 # Create a STAC Catalog...not working!@#$%^&*
                 catalog = pystac.Catalog(
