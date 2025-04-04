@@ -257,7 +257,7 @@ class assetCatalog:
                 'assetcount': [self.assetcount],
                 'assetsize': [self.assetsize],
                 'totalpointcount': [self.totalpoints],
-                'hasSRS': [self.srs != ""],
+                'hasCRS': [self.srs != ""],
                 'minx': [self.overallbounds.minx],
                 'miny': [self.overallbounds.miny],
                 'maxx': [self.overallbounds.maxx],

@@ -331,9 +331,13 @@ if testnum() == 8:
     rootPath = "T:\\FS\\Reference\\RSImagery\\ProcessedData\\r06\\R06_DRM_Deliverables\\PointCloud"
 
     def doIndex(root: str, pattern: str, indexBaseName: str, indexExt: str):
-        cat = assetCatalog(root, pattern)
-        if cat.is_valid():
-            cat.to_file(indexBaseName + indexExt, content = 'all' if indexExt.lower() == '.gpkg' else 'assets')
+        if not os.path.exists(indexBaseName + indexExt):
+            cat = assetCatalog(root, pattern)
+            if cat.is_valid():
+                cat.to_file(indexBaseName + indexExt, content = 'all' if indexExt.lower() == '.gpkg' else 'assets')
+        else:
+            print(f"{indexBaseName}{indexExt} already exists...skipping...")
+
 
     # copied file to same folder with code. Didn't like having file in C:\users
     csvList = pandas.read_csv(Path("TDrive_R6_FileList.csv"))
@@ -352,7 +356,7 @@ if testnum() == 8:
     finalList = finalList.reset_index(drop = True)
 
     # manipulate folder name to get name for index
-    # idea is to strip off root path, then replace slashes with "__"
+    # idea is to strip off root path, then replace slashes with "slashString"
     # root path...Path() will replace slashes and delete training slash
 
     finalList.loc[:, 'indexName'] = finalList.loc[:, 'Folder'].str.replace(rootPath, "").str.replace("\\", slashString).str.lstrip(slashString)
@@ -383,9 +387,26 @@ if testnum() == 8:
 
         print("Done!\n")
 
-        if index >= 3:
-            break
+        #if index >= 3:
+        #    break
 
     #pandas.set_option('display.max_rows', 25)
     #print(finalList)
     #print(finalList.iloc[0, 8])
+
+
+
+
+
+if (testnum() == 99):
+    conda install silvimetric --only-deps --yes
+    conda install conda-pack --yes
+    conda pack -n my_env -o out.tar.gz
+
+    conda unpack out.tar.gz
+
+    pip install silvimetric
+
+    # Ty Nietupski
+ 
+    #USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2133n2147.copc.laz

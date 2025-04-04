@@ -7,6 +7,7 @@ folder <- "C:/Users/bmcgaughey/SilviMetricTesting/Python/"
 file <- "assets.gpkg"
 file <- "COL_2007_RiverCorridor_LakeRoosevelt__LAS.gpkg"
 file <- "COL_2012_UTM10_11_][_1_LAZ__LAZ.gpkg"
+file <- "COL_2015_usfsAlbers_meters_][_1_LAZ__LAZ.gpkg"
 #file <- "COL_2012_UTM10_11_][_5_Other_Vendor_Products_][_POINTS_][_COLVILLE_AGL_900__LAS.gpkg"
 
 #folder <- "G:/R_Stuff/PlotClipping/KyPtCloudTileIndex/"

@@ -1,0 +1,29 @@
+{
+  "pipeline":
+  [
+    {
+      "filename": "h:/FUSIONTestData/USGS_LPC_CA_NoCAL_Wildfires_PlumasNF_B2_2018_w2133n2147.copc.laz",
+      "tag": "readers_copc1",
+      "type": "readers.copc",
+      "bounds": "([635547, 635847], [4402305, 4402805])"
+    },
+    {
+      "expression": "(((Classification != 7) && (Classification != 9) && (Classification != 18)) && (Synthetic != 1) && (Withheld != 1))",
+      "inputs":
+      [
+        "readers_copc1"
+      ],
+      "tag": "filters_expression1",
+      "type": "filters.expression"
+    },
+    {
+      "inputs":
+      [
+        "filters_expression1"
+      ],
+      "tag": "writers_copc1",
+      "type": "writers.copc",
+      "filename":"NoCAL_PlumasNF_B2_2018_TestingData.copc.laz"
+    }
+  ]
+}
