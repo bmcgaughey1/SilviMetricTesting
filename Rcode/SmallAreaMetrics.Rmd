@@ -1,0 +1,107 @@
+---
+title: "Comparing SilviMetric and FUSION outputs for small test area"
+author: "Robert J. McGaughey"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load packages
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(terra)
+library(sf)
+library(mapview)
+```
+
+## Setup
+
+```{r}
+HAGVRTfolder <- "C:/Users/bmcgaughey/SilviMetricTesting/TestOutput/PlumasSmallArea_vrt_tifs/"
+FUSIONfolder <- "H:/FUSIONTestMetrics/SmallArea/Products_SilviMetricTesting_2025-04-11/FINAL_SilviMetricTesting_2025-04-11/Metrics_30METERS/"
+
+SMfile <- "m_Z_max.tif"
+FUSIONfile <- "elev_max_2plus_30METERS.img"
+```
+
+## Read raster data and display extent and summary info
+
+```{r echo=FALSE, results='hold'}
+HAGVRTrast <- rast(paste0(HAGVRTfolder, SMfile))
+FUSIONrast <- rast(paste0(FUSIONfolder, FUSIONfile))
+
+cat("FUSION raster:    ncol=", ncol(FUSIONrast), "   nrow=",nrow(FUSIONrast), "   cells=", ncol(FUSIONrast) * nrow(FUSIONrast), "\n")
+cat("HAGVRT raster:    ncol=", ncol(HAGVRTrast), "   nrow=",nrow(HAGVRTrast), "   cells=", ncol(HAGVRTrast) * nrow(HAGVRTrast), "\n")
+
+cat("FUSION raster:    ")
+ext(FUSIONrast)
+cat("HAGVRT raster:    ")
+ext(HAGVRTrast)
+```
+
+## Adjust extent
+
+The rasters produced when using PDAL's hag_nn are different from those produced using other hag filters.
+I don't know for sure why but suspect it has to do with the extent of ground points compared to the extent
+of non-ground points.
+
+The HAGNN raster requires an extra operation to make it match the other rasters.
+
+FUSION rasters are assigned a srs using an ESRI's projection file. The format of these files differs from 
+the format used for the srs in the point cloud files so SilviMetric's srs doesn't exactly match FUSION's.
+To overcome this, I forced the srs for FUSION rasters to match those from SilviMetric.
+
+```{r echo=FALSE, results='hold'}
+tHAGVRTrast <- trim(HAGVRTrast)
+tFUSIONrast <- trim(FUSIONrast)
+cat("adjusted FUSION raster:    ")
+ext(tFUSIONrast)
+cat("adjusted HAGVRT raster:    ")
+ext(tHAGVRTrast)
+
+# force FUSION srs to match
+crs(tFUSIONrast) <- crs(tHAGVRTrast)
+```
+
+## Extent and summary information for adjusted rasters
+
+```{r echo=FALSE, results='hold'}
+cat("FUSION output:    ncol=", ncol(tFUSIONrast), "   nrow=",nrow(tFUSIONrast), "   cells=", ncol(tFUSIONrast) * nrow(tFUSIONrast), "\n")
+cat("HAGVRT output:    ncol=", ncol(tHAGVRTrast), "   nrow=",nrow(tHAGVRTrast), "   cells=", ncol(tHAGVRTrast) * nrow(tHAGVRTrast), "\n")
+
+cat("FUSION raster:\n")
+summary(tFUSIONrast)
+cat("HAGVRT raster:\n")
+summary(tHAGVRTrast)
+```
+
+## Compare raster values for maximum height
+
+This metric (maximum HAG) doesn't involve any calculation so it basically tests that FUSION and SilviMetric
+are using the same HAG values and same point for the cells.
+
+This is a plot of the FUSION output for maximum height. 
+
+```{r echo=FALSE}
+plot(FUSIONrast, main = "FUSION -- maxHt")
+```
+
+The first test uses HAG computed using the VRT with PDAL's [hag_dem](https://pdal.io/en/stable/stages/filters.hag_dem.html)
+filter. The interpolation problem with PDAL mentioned above leads 
+to small differences between HAG compute by FUSION and using the VRT. In general, these differences are 
+largest at the edge of the coverage area but there are patterns related to topogrphic features visible
+in the difference raster.
+
+```{r echo=FALSE, results='hold'}
+#par(mfrow = c(2, 1))
+r <- tFUSIONrast - tHAGVRTrast
+summary(r)
+hist(r, nclass= 100, main = "FUSION minus SilviMetric -- maxHt", xlab = "HAG computed using VRT")
+plot(r, main = "FUSION minus SilviMetric -- maxHt")
+par(mfrow = c(1, 1))
+```
