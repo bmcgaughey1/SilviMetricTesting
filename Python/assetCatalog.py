@@ -138,8 +138,6 @@ class assetCatalog:
         # scan assets
         if not self.__scan_assets():
             raise Exception(f"No assets found in {base} matching {pattern}")
-        
-        self.assetcount = len(self.assets)
 
     def is_complete(self) -> bool:
         """
@@ -350,6 +348,8 @@ class assetCatalog:
         """
         if self.has_assets():
             if self.assets[0].hassrs:
+                if len(self.assets) == 1:
+                    return True
                 crs = pyproj.CRS.from_json(self.assets[0].srs)
                 for asset in self.assets[1:]:
                     fcrs = pyproj.CRS.from_json(asset.srs)
@@ -486,6 +486,8 @@ class assetCatalog:
                 # if len(srs) == 0:
                 #     raise Exception(f"Asset {ta} does not have srs")
                 
+            self.assetcount = len(self.assets)
+
             self.overallbounds = self.update_overall_bounds()
             if len(self.assets) > 0:
                 self.srs = self.assets[0].srs
